@@ -82,10 +82,18 @@ DATASET = [
 
 def write_files():
     # 1. Dataset
-    with open("expanded_training_data_14b.jsonl", "w", encoding="utf-8") as f:
-        for item in DATASET:
-            f.write(json.dumps(item, ensure_ascii=False) + "\n")
-    print("Created expanded_training_data_14b.jsonl")
+    try:
+        from dataset_generator import SAMPLES, make_sample
+        samples_data = [make_sample(u, a) for u, a in SAMPLES]
+        with open("expanded_training_data_14b.jsonl", "w", encoding="utf-8") as f:
+            for item in samples_data:
+                f.write(json.dumps(item, ensure_ascii=False) + "\n")
+        print(f"Created expanded_training_data_14b.jsonl with {len(samples_data)} rich training pairs.")
+    except Exception:
+        with open("expanded_training_data_14b.jsonl", "w", encoding="utf-8") as f:
+            for item in DATASET:
+                f.write(json.dumps(item, ensure_ascii=False) + "\n")
+        print("Created expanded_training_data_14b.jsonl (fallback)")
 
     # 2. FactGuard
     factguard_code = '''import re
@@ -329,6 +337,8 @@ def startup_event():
 
 class HumanizeRequest(BaseModel):
     text: str = Field(min_length=1, max_length=12000)
+    tone: str = "Standard"
+    strength: str = "Medium"
 
 class HumanizeResponse(BaseModel):
     original: str
@@ -354,9 +364,18 @@ def humanize(req: HumanizeRequest):
         messages = [
             {
                 "role": "system",
-                "content": "You are HumanizeAI, an expert writing assistant. Rewrite the user's text into natural, fluent, human prose. You MUST strictly preserve all numbers, dates, names, currencies, percentages, negations, and factual details."
+                "content": (
+                    "You are HumanizeAI, an expert human editor. Rewrite the input text into natural, fluent, human prose "
+                    "that reads genuinely human and passes all AI detectors (high perplexity and high burstiness).\n\n"
+                    "RULES:\n"
+                    "1. FACTGUARD INVARIANTS: Strictly preserve all numbers, dates, years, currencies ($/€/£), percentages (%), names, and negative conditions (not, never, cannot). Never drop or modify any fact.\n"
+                    "2. HIGH BURSTINESS: Vary your sentence lengths dramatically. Mix short 4-word punchy sentences with longer compound thoughts (18-24 words).\n"
+                    "3. BAN AI CLICHÉS: Strictly avoid delve, testament, tapestry, pivotal, beacon, crucial, foster, spearhead, furthermore, moreover, in conclusion, realm, landscape, game-changer, seamless, paramount.\n"
+                    "4. NATURAL CADENCE: Use active voice, natural contractions (it's, won't, didn't, we've), and conversational flow.\n"
+                    "5. Output ONLY the rewritten text without preambles or notes."
+                )
             },
-            {"role": "user", "content": req.text}
+            {"role": "user", "content": f"Tone: {req.tone}\nStrength: {req.strength}\n\nText to rewrite:\n{req.text}"}
         ]
         prompt = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
         inputs = tokenizer(prompt, return_tensors="pt").to(device)
@@ -366,8 +385,9 @@ def humanize(req: HumanizeRequest):
                 **inputs,
                 max_new_tokens=512,
                 do_sample=True,
-                temperature=0.7,
-                top_p=0.9
+                temperature=0.85,
+                top_p=0.92,
+                repetition_penalty=1.15
             )
         
         decoded = tokenizer.decode(outputs[0][inputs.input_ids.shape[1]:], skip_special_tokens=True).strip()

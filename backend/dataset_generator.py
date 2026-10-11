@@ -1,103 +1,366 @@
 import json
 from pathlib import Path
 
-DATASET = [
-    # 1. Financial & Business
-    {
+BASE_SYSTEM_PROMPT = (
+    "You are HumanizeAI, an expert human editor. Rewrite the input text into natural, fluent, human prose "
+    "that passes all AI detectors (high perplexity and high burstiness). You MUST strictly preserve all numbers, "
+    "dates, names, currencies, percentages, negations, and factual details."
+)
+
+def make_sample(user_text: str, human_rewrite: str) -> dict:
+    return {
         "messages": [
-            {"role": "system", "content": "You are HumanizeAI, an expert writing assistant. Rewrite the input text into natural, fluent, human prose. You MUST strictly preserve all numbers, dates, names, currencies, percentages, negations, and factual details."},
-            {"role": "user", "content": "The quarterly earnings call took place on October 14, 2025. Total revenue rose by 14.8% to $12.4M, whereas operating margins did not decline below 21%. Furthermore, Dr. Aris Thorne stated that product delivery would not commence before Q1 2026 unless client approvals are finalized."},
-            {"role": "assistant", "content": "The quarterly earnings call took place on October 14, 2025. Total revenue grew 14.8% to reach $12.4M, and operating margins held firm, not dipping below 21%. Dr. Aris Thorne also noted that product delivery won't start until Q1 2026, unless client approvals are wrapped up sooner."}
-        ]
-    },
-    {
-        "messages": [
-            {"role": "system", "content": "You are HumanizeAI, an expert writing assistant. Rewrite the input text into natural, fluent, human prose. You MUST strictly preserve all numbers, dates, names, currencies, percentages, negations, and factual details."},
-            {"role": "user", "content": "It is important to note that the fiscal year 2024 generated $450,000 in recurring subscriptions. However, 12 customers did not renew their annual service agreements. CFO Marcus Vance emphasized that operational expenditure was reduced by 8.5% across all 4 regional subsidiaries."},
-            {"role": "assistant", "content": "Fiscal year 2024 brought in $450,000 from recurring subscriptions, though 12 customers chose not to renew their annual service plans. CFO Marcus Vance highlighted that operational spending dropped 8.5% across all 4 regional subsidiaries."}
-        ]
-    },
-    {
-        "messages": [
-            {"role": "system", "content": "You are HumanizeAI, an expert writing assistant. Rewrite the input text into natural, fluent, human prose. You MUST strictly preserve all numbers, dates, names, currencies, percentages, negations, and factual details."},
-            {"role": "user", "content": "During the board summit on November 3, 2025, Helena Rostova announced an initial budget of €3.2M for European market penetration. She warned that profitability cannot be achieved within the first 18 months."},
-            {"role": "assistant", "content": "At the board summit on November 3, 2025, Helena Rostova unveiled a €3.2M budget to expand into Europe. She cautioned that the initiative cannot turn a profit within its first 18 months."}
-        ]
-    },
-    # 2. Medical, Scientific & Academic
-    {
-        "messages": [
-            {"role": "system", "content": "You are HumanizeAI, an expert writing assistant. Rewrite the input text into natural, fluent, human prose. You MUST strictly preserve all numbers, dates, names, currencies, percentages, negations, and factual details."},
-            {"role": "user", "content": "In accordance with the study conducted by Larson et al. [3], 42 out of 50 patient subjects did not display adverse reactions to the 100mg dosage. However, patients with preexisting cardiovascular conditions were specifically excluded from the cohort."},
-            {"role": "assistant", "content": "As shown in the study by Larson et al. [3], 42 of the 50 patients showed no adverse reactions to the 100mg dose. Crucially, individuals with preexisting cardiovascular conditions were not included in the cohort."}
-        ]
-    },
-    {
-        "messages": [
-            {"role": "system", "content": "You are HumanizeAI, an expert writing assistant. Rewrite the input text into natural, fluent, human prose. You MUST strictly preserve all numbers, dates, names, currencies, percentages, negations, and factual details."},
-            {"role": "user", "content": "The clinical trial commenced on January 15, 2026, administering 50mg of compound AZ-902 twice daily. Statistical significance was verified at p < 0.01, yet researchers could not conclude a causal link between treatment duration and long-term remission."},
-            {"role": "assistant", "content": "The clinical trial began on January 15, 2026, testing a 50mg dose of compound AZ-902 twice a day. Even though statistical significance was confirmed at p < 0.01, researchers were unable to establish a causal connection between the length of treatment and long-term remission."}
-        ]
-    },
-    {
-        "messages": [
-            {"role": "system", "content": "You are HumanizeAI, an expert writing assistant. Rewrite the input text into natural, fluent, human prose. You MUST strictly preserve all numbers, dates, names, currencies, percentages, negations, and factual details."},
-            {"role": "user", "content": "The temperature of the reaction vessel was maintained at 78.5°C under 2.4 atmospheres of pressure. Despite multiple iterations, yield did not surpass 64.2%, and trace impurities were detected in 3 out of 10 samples."},
-            {"role": "assistant", "content": "The reaction vessel was kept at 78.5°C under 2.4 atmospheres of pressure. Across multiple runs, the yield never rose above 64.2%, with minor impurities showing up in 3 of the 10 samples."}
-        ]
-    },
-    # 3. Technical, Software & Systems
-    {
-        "messages": [
-            {"role": "system", "content": "You are HumanizeAI, an expert writing assistant. Rewrite the input text into natural, fluent, human prose. You MUST strictly preserve all numbers, dates, names, currencies, percentages, negations, and factual details."},
-            {"role": "user", "content": "The distributed database cluster experienced 99.98% uptime in February 2026. Latency spikes exceeding 250ms were isolated to node cluster us-east-1b, affecting approximately 1,200 concurrent user sessions. No data loss occurred during the failover event."},
-            {"role": "assistant", "content": "The distributed database cluster achieved 99.98% uptime throughout February 2026. Latency spikes above 250ms were confined to the us-east-1b node cluster, impacting around 1,200 active user sessions, though no data was lost during the failover."}
-        ]
-    },
-    {
-        "messages": [
-            {"role": "system", "content": "You are HumanizeAI, an expert writing assistant. Rewrite the input text into natural, fluent, human prose. You MUST strictly preserve all numbers, dates, names, currencies, percentages, negations, and factual details."},
-            {"role": "user", "content": "Engineers deployed patch v4.2.1 on August 19, 2025. Memory consumption was reduced by 35MB per container worker, but throughput did not increase beyond 14,000 queries per second under stress testing."},
-            {"role": "assistant", "content": "The engineering team rolled out patch v4.2.1 on August 19, 2025. Each worker container consumed 35MB less memory, although throughput topped out at 14,000 queries per second during stress testing."}
-        ]
-    },
-    # 4. Strict Negations & Causal Logic
-    {
-        "messages": [
-            {"role": "system", "content": "You are HumanizeAI, an expert writing assistant. Rewrite the input text into natural, fluent, human prose. You MUST strictly preserve all numbers, dates, names, currencies, percentages, negations, and factual details."},
-            {"role": "user", "content": "The audit committee did not approve the transfer of $85,000 on March 4, 2026, because compliance documentation was neither signed by the division lead nor validated by internal legal counsel."},
-            {"role": "assistant", "content": "The audit committee withheld approval for the $85,000 transfer on March 4, 2026, as compliance forms were neither signed by the division lead nor cleared by internal legal counsel."}
-        ]
-    },
-    {
-        "messages": [
-            {"role": "system", "content": "You are HumanizeAI, an expert writing assistant. Rewrite the input text into natural, fluent, human prose. You MUST strictly preserve all numbers, dates, names, currencies, percentages, negations, and factual details."},
-            {"role": "user", "content": "Preliminary benchmarks suggest that algorithm B is 2.3x faster than algorithm A. However, this does not imply that algorithm B is suitable for low-memory mobile hardware with under 4GB of RAM."},
-            {"role": "assistant", "content": "Early benchmarks show algorithm B running 2.3x faster than algorithm A. That said, this doesn't mean algorithm B is ready for budget mobile devices equipped with less than 4GB of RAM."}
-        ]
-    },
-    # 5. Professional & Conversational Communications
-    {
-        "messages": [
-            {"role": "system", "content": "You are HumanizeAI, an expert writing assistant. Rewrite the input text into natural, fluent, human prose. You MUST strictly preserve all numbers, dates, names, currencies, percentages, negations, and factual details."},
-            {"role": "user", "content": "I am writing to formally communicate that your candidate interview with David Sterling has been rescheduled from Thursday, April 9 at 2:00 PM to Friday, April 10 at 10:30 AM EST. Please confirm your availability by Wednesday at 5:00 PM."},
-            {"role": "assistant", "content": "I wanted to let you know that your interview with David Sterling has been moved from Thursday, April 9 at 2:00 PM to Friday, April 10 at 10:30 AM EST. Please let us know if that time works for you by Wednesday at 5:00 PM."}
-        ]
-    },
-    {
-        "messages": [
-            {"role": "system", "content": "You are HumanizeAI, an expert writing assistant. Rewrite the input text into natural, fluent, human prose. You MUST strictly preserve all numbers, dates, names, currencies, percentages, negations, and factual details."},
-            {"role": "user", "content": "Please be advised that all 3 deliverables outlined in project milestone 4 must be finalized prior to December 18, 2025. Failure to submit deliverables will result in a 5% contractual penalty per day."},
-            {"role": "assistant", "content": "Just a reminder that all 3 deliverables for milestone 4 need to be finished before December 18, 2025. Late submissions incur a 5% contract penalty for each day delayed."}
+            {"role": "system", "content": BASE_SYSTEM_PROMPT},
+            {"role": "user", "content": user_text},
+            {"role": "assistant", "content": human_rewrite}
         ]
     }
+
+SAMPLES = [
+    # 1. Financial & Corporate Earnings
+    (
+        "The quarterly earnings call took place on October 14, 2025. Total revenue rose by 14.8% to $12.4M, whereas operating margins did not decline below 21%. Furthermore, Dr. Aris Thorne stated that product delivery would not commence before Q1 2026 unless client approvals are finalized.",
+        "The quarterly earnings call took place on October 14, 2025. Total revenue grew 14.8% to hit $12.4M, while operating margins stayed solid, not slipping under 21%. Dr. Aris Thorne also noted that deliveries won't start until Q1 2026 without final client sign-offs."
+    ),
+    (
+        "It is important to note that the fiscal year 2024 generated $450,000 in recurring subscriptions. However, 12 customers did not renew their annual service agreements. CFO Marcus Vance emphasized that operational expenditure was reduced by 8.5% across all 4 regional subsidiaries.",
+        "Fiscal year 2024 brought in $450,000 from recurring subscriptions. That said, 12 clients didn't renew their annual plans. CFO Marcus Vance pointed out that operating costs dropped 8.5% across all 4 regional branches."
+    ),
+    (
+        "During the board summit on November 3, 2025, Helena Rostova announced an initial budget of €3.2M for European market penetration. She warned that profitability cannot be achieved within the first 18 months.",
+        "At the board summit on November 3, 2025, Helena Rostova unveiled an initial €3.2M budget for European expansion. She cautioned that the division can't turn a profit in its first 18 months."
+    ),
+    (
+        "Q3 EBITDA stood at $8.9M, reflecting a 6.2% year-over-year contraction compared to $9.5M recorded in Q3 2024. Debt servicing costs did not exceed $1.1M.",
+        "Q3 EBITDA came in at $8.9M, down 6.2% from the $9.5M posted in Q3 2024. Fortunately, debt payments didn't cross $1.1M."
+    ),
+    (
+        "The venture capital consortium finalized a $15.5M Series B round on January 22, 2026, led by Horizon Partners with a 12% equity allocation.",
+        "On January 22, 2026, the investor syndicate closed a $15.5M Series B round. Horizon Partners led the deal, securing a 12% equity stake."
+    ),
+    (
+        "Operating cash flow reached $2.7M in April 2025, but free cash flow did not turn positive until June 30, remaining at -$340,000 during May.",
+        "Operating cash flow hit $2.7M in April 2025. Still, free cash flow didn't flip positive until June 30, sitting at -$340,000 through May."
+    ),
+    (
+        "Gross margins improved by 340 basis points to 58.4% in 2025, driven by a $2.1M reduction in supplier procurement expenses.",
+        "Gross margins jumped 340 basis points to reach 58.4% in 2025. That was largely thanks to saving $2.1M on supplier procurement."
+    ),
+    (
+        "The company repurchased 450,000 common shares at an average price of $32.40 per share during the two-week buyback window ending September 15, 2025.",
+        "Between early September and the 15th, 2025, the firm bought back 450,000 common shares. Prices averaged $32.40 per share."
+    ),
+    (
+        "Annual recurring revenue climbed to $48.2M by December 31, 2025, whereas net revenue retention did not dip below 114% across enterprise tiers.",
+        "ARR reached $48.2M by December 31, 2025. Even better, enterprise net retention didn't drop below 114%."
+    ),
+    (
+        "Capital expenditure for fiscal 2026 is projected at $7.5M, representing an 18% decrease from the $9.1M spent throughout 2025.",
+        "For fiscal 2026, planned capital spending stands at $7.5M. That's an 18% cut compared to the $9.1M spent in 2025."
+    ),
+
+    # 2. Medical, Clinical Trials & Healthcare
+    (
+        "In accordance with the study conducted by Larson et al. [3], 42 out of 50 patient subjects did not display adverse reactions to the 100mg dosage. However, patients with preexisting cardiovascular conditions were specifically excluded from the cohort.",
+        "In Larson's study [3], 42 of 50 participants showed zero adverse reactions to the 100mg dose. Crucially, anyone with prior cardiovascular problems wasn't allowed in the cohort."
+    ),
+    (
+        "The clinical trial commenced on January 15, 2026, administering 50mg of compound AZ-902 twice daily. Statistical significance was verified at p < 0.01, yet researchers could not conclude a causal link between treatment duration and long-term remission.",
+        "The trial kicked off on January 15, 2026, testing 50mg of compound AZ-902 twice a day. While statistical significance held at p < 0.01, researchers couldn't confirm a clear link between how long patients took it and lasting remission."
+    ),
+    (
+        "The temperature of the reaction vessel was maintained at 78.5°C under 2.4 atmospheres of pressure. Despite multiple iterations, yield did not surpass 64.2%, and trace impurities were detected in 3 out of 10 samples.",
+        "The reaction vessel was held at 78.5°C under 2.4 atmospheres of pressure. After multiple tries, yields never passed 64.2%, and minor impurities showed up in 3 of the 10 samples."
+    ),
+    (
+        "Phase II oncology evaluations demonstrated a 38.5% objective response rate across 120 enrolled participants receiving 200mg infusions every 3 weeks.",
+        "Phase II cancer trials showed a 38.5% response rate across 120 patients who got 200mg infusions every 3 weeks."
+    ),
+    (
+        "Serum biomarker levels declined by 44% within 72 hours of therapeutic administration, while liver enzyme counts did not exceed normal baseline ranges in 95% of cases.",
+        "Blood biomarker counts dropped 44% within 72 hours of treatment. Encouragingly, liver enzymes didn't spike above normal limits in 95% of patients."
+    ),
+    (
+        "The pediatric dosage must not exceed 2.5mg per kilogram of body weight, and total daily intake should never surpass 75mg under any circumstance.",
+        "Never give children more than 2.5mg per kilogram of body weight. Under no circumstance should daily intake pass 75mg."
+    ),
+    (
+        "Post-operative recovery intervals averaged 4.2 days for minimally invasive laparoscopic procedures compared to 8.7 days for conventional open laparotomy.",
+        "Patients recovered in about 4.2 days after laparoscopic surgery. Open laparotomy, by contrast, took 8.7 days on average."
+    ),
+    (
+        "Blood pressure readings dropped from 145/92 mmHg to 122/78 mmHg over the 12-week intervention period in 84 out of 100 hypertensive patients.",
+        "Over 12 weeks of treatment, blood pressure fell from 145/92 mmHg down to 122/78 mmHg for 84 out of 100 patients."
+    ),
+    (
+        "Viral clearance was verified in 91% of patients by day 10, whereas secondary bacterial complications were observed in fewer than 3% of hospitalizations.",
+        "By day 10, 91% of patients cleared the virus. Fewer than 3% developed secondary bacterial infections during their hospital stay."
+    ),
+    (
+        "The vaccine cohort developed neutralizing antibody titers exceeding 1:1280 after 28 days, showing no significant decay through month 6.",
+        "Within 28 days, vaccinated participants built antibody titers above 1:1280. Those levels didn't noticeably drop through month 6."
+    ),
+
+    # 3. Technology, Cloud & Systems Engineering
+    (
+        "The distributed database cluster experienced 99.98% uptime in February 2026. Latency spikes exceeding 250ms were isolated to node cluster us-east-1b, affecting approximately 1,200 concurrent user sessions. No data loss occurred during the failover event.",
+        "The distributed database held 99.98% uptime in February 2026. Latency jumps above 250ms were confined to cluster us-east-1b, hitting around 1,200 active users. Luckily, zero data was lost during failover."
+    ),
+    (
+        "Engineers deployed patch v4.2.1 on August 19, 2025. Memory consumption was reduced by 35MB per container worker, but throughput did not increase beyond 14,000 queries per second under stress testing.",
+        "Our team shipped patch v4.2.1 on August 19, 2025. Memory dropped by 35MB per container worker, though throughput didn't climb past 14,000 queries per second in benchmark runs."
+    ),
+    (
+        "The Kubernetes cluster autoscale policy triggered 14 additional pods when CPU load crossed 82% at 14:35 UTC on November 9, 2025.",
+        "At 14:35 UTC on November 9, 2025, CPU usage hit 82%. That automatically spun up 14 extra pods across the Kubernetes cluster."
+    ),
+    (
+        "P99 API response times remained below 45ms across 3.4M requests logged during the Black Friday peak window from 08:00 to 12:00 EST.",
+        "During Black Friday peak traffic between 08:00 and 12:00 EST, 99% of our 3.4M API requests resolved in under 45ms."
+    ),
+    (
+        "The cloud migration saved $142,000 annually in on-premise colocation lease fees, but ingress/egress transfer charges rose by $18,500 across Q2 2025.",
+        "Moving to cloud infrastructure cut $142,000 a year in data center rent. Even so, data transfer bills ticked up $18,500 in Q2 2025."
+    ),
+    (
+        "Zero-day vulnerability CVE-2025-4491 was patched within 4 hours of disclosure, affecting fewer than 25 external customer endpoints.",
+        "The security team patched vulnerability CVE-2025-4491 in under 4 hours. It touched fewer than 25 external customer endpoints."
+    ),
+    (
+        "Storage footprint shrank from 14.8TB to 6.1TB following Zstandard level-3 compression, saving roughly $1,800 monthly in cold-tier object storage fees.",
+        "Switching to Zstandard level-3 compression dropped storage from 14.8TB down to 6.1TB. That trims roughly $1,800 each month from cold storage costs."
+    ),
+    (
+        "The Kafka event broker processed 2.4 billion streaming messages on December 1, 2025, with consumer lag never exceeding 350 records across 64 partitions.",
+        "On December 1, 2025, the Kafka cluster handled 2.4 billion real-time events. Consumer lag stayed under 350 records across all 64 partitions."
+    ),
+    (
+        "Model training completed in 42.6 hours on an array of 8 H100 GPUs, drawing 3.1 kW per chassis and achieving a perplexity score of 7.42 on validation splits.",
+        "Training finished in 42.6 hours using 8 H100 GPUs. The setup pulled 3.1 kW per chassis and reached a 7.42 validation perplexity."
+    ),
+    (
+        "Nightly database backups required 1 hour and 18 minutes to complete across 450GB of compressed tables, finishing prior to the 04:00 AM maintenance window.",
+        "Nightly backups for 450GB of tables finished in 1 hour and 18 minutes, safely beating the 04:00 AM maintenance window."
+    ),
+
+    # 4. Legal, Regulatory & Auditing
+    (
+        "The audit committee did not approve the transfer of $85,000 on March 4, 2026, because compliance documentation was neither signed by the division lead nor validated by internal legal counsel.",
+        "The audit committee blocked an $85,000 transfer on March 4, 2026. The issue? Compliance paperwork lacked the division lead's signature and hadn't been cleared by legal."
+    ),
+    (
+        "Preliminary benchmarks suggest that algorithm B is 2.3x faster than algorithm A. However, this does not imply that algorithm B is suitable for low-memory mobile hardware with under 4GB of RAM.",
+        "Early tests show algorithm B running 2.3x faster than algorithm A. Still, that doesn't mean it's ready for budget phones with less than 4GB of RAM."
+    ),
+    (
+        "Under Section 4.2 of the master services agreement, liquidated damages cannot exceed 15% of the total $350,000 contract value in the event of unexcused downtime.",
+        "According to Section 4.2 of the agreement, downtime damages can't top 15% of the total $350,000 contract value."
+    ),
+    (
+        "Regulatory authorities imposed a €1.4M fine on July 18, 2025, after 4,800 consumer records were improperly stored in unencrypted S3 buckets.",
+        "On July 18, 2025, regulators levied a €1.4M penalty. An unencrypted storage bucket had exposed 4,800 customer files."
+    ),
+    (
+        "Patent application US-11,482,903 was officially granted on September 30, 2025, protecting 18 proprietary hardware claims through 2043.",
+        "Patent US-11,482,903 was approved on September 30, 2025, safeguarding 18 hardware claims through 2043."
+    ),
+    (
+        "Non-compete covenants will remain enforceable for 12 months following termination, but cannot restrict employment outside the 3 specified metropolitan areas.",
+        "The non-compete clause lasts 12 months post-employment, but it can't bar anyone from working outside the 3 named metro areas."
+    ),
+    (
+        "Tax liability was calculated at $218,500 under federal statute 26 U.S.C. § 41, reflecting an eligible research credit of $45,200 for tax year 2024.",
+        "Federal tax liability totaled $218,500 for the 2024 tax year, which includes a $45,200 research credit under 26 U.S.C. § 41."
+    ),
+    (
+        "The settlement agreement requires escrow deposit of $620,000 by 5:00 PM EST on October 28, 2025, or the arbitration stay will automatically dissolve.",
+        "Under the settlement, $620,000 must be deposited in escrow by 5:00 PM EST on October 28, 2025. Otherwise, arbitration resumes automatically."
+    ),
+    (
+        "Environmental compliance inspection report #882 noted 2 minor air filtration infractions, but neither infraction carried monetary fines exceeding $5,000.",
+        "Inspection report #882 highlighted 2 minor ventilation issues, though neither resulted in fines over $5,000."
+    ),
+    (
+        "Shareholders holding at least 66.7% of voting stock approved the merger proposal on May 12, 2025, with only 4.2% dissenting.",
+        "On May 12, 2025, investors with 66.7% of voting shares backed the merger. Only 4.2% voted against it."
+    ),
+
+    # 5. Workplace, Executive Communication & Human Resources
+    (
+        "I am writing to formally communicate that your candidate interview with David Sterling has been rescheduled from Thursday, April 9 at 2:00 PM to Friday, April 10 at 10:30 AM EST. Please confirm your availability by Wednesday at 5:00 PM.",
+        "I wanted to let you know that your interview with David Sterling moved from Thursday, April 9 at 2:00 PM to Friday, April 10 at 10:30 AM EST. Could you confirm if that time works by Wednesday at 5:00 PM?"
+    ),
+    (
+        "Please be advised that all 3 deliverables outlined in project milestone 4 must be finalized prior to December 18, 2025. Failure to submit deliverables will result in a 5% contractual penalty per day.",
+        "Just a reminder: all 3 items for milestone 4 need to be done by December 18, 2025. Missing the cutoff triggers a 5% daily contract penalty."
+    ),
+    (
+        "Annual performance reviews will commence on November 15, 2025, covering 140 team members across engineering and product design.",
+        "Year-end reviews start on November 15, 2025, across our 140 product and engineering teammates."
+    ),
+    (
+        "The revised benefits package raises tuition reimbursement from $2,500 to $5,000 annually, starting on January 1, 2026, for all employees with over 6 months of tenure.",
+        "Starting January 1, 2026, tuition reimbursement jumps from $2,500 to $5,000 each year for teammates who've been with us at least 6 months."
+    ),
+    (
+        "We are pleased to extend an employment offer for the Lead Architect role at a base salary of $175,000 with a $20,000 signing incentive, expiring in 7 business days.",
+        "We're excited to offer you the Lead Architect position! The package includes a $175,000 base salary and a $20,000 sign-on bonus, open for 7 business days."
+    ),
+    (
+        "Office relocation from 500 Market Street to 120 Montgomery Street is scheduled for the weekend of March 21–22, 2026, with normal operations resuming Monday at 08:30 AM.",
+        "We're moving offices from 500 Market Street to 120 Montgomery Street over the weekend of March 21–22, 2026. Doors open bright and early Monday at 08:30 AM."
+    ),
+    (
+        "The departmental training workshop on October 5 will host 45 attendees in Conference Room B from 09:00 AM to 03:30 PM, with catered lunch provided at 12:15 PM.",
+        "Our workshop on October 5 runs from 09:00 AM to 03:30 PM in Conference Room B for 45 people. Lunch is arriving at 12:15 PM."
+    ),
+    (
+        "Employee retention remained at 92.4% throughout 2025, with voluntary departures decreasing by 18% compared to 2024 metrics.",
+        "Team retention stayed high at 92.4% in 2025, with voluntary resignations dropping 18% from 2024 levels."
+    ),
+    (
+        "Expense reimbursements submitted after Friday at 17:00 will not be processed until the following pay cycle on the 15th of the month.",
+        "Heads up: expense reports filed after 5:00 PM on Friday won't get processed until the next paycheck on the 15th."
+    ),
+    (
+        "The engineering hackathon will take place on April 24–25, 2026, with $10,000 in prizes distributed among the top 3 scoring teams.",
+        "Our team hackathon runs April 24–25, 2026, featuring $10,000 in total prizes across the top 3 spots."
+    ),
+
+    # 6. Academic, Research & Education
+    (
+        "Survey data collected from 1,250 undergraduate respondents across 8 universities showed that 68% prefer hybrid learning models, while 14% opposed remote examination.",
+        "In a survey of 1,250 college students across 8 campuses, 68% favored hybrid schedules. Only 14% pushed back against online exams."
+    ),
+    (
+        "Historical census records reveal that the township population grew from 4,120 residents in 1880 to 19,450 by 1910, driven by a 320% expansion in textile manufacturing employment.",
+        "Town records show population surging from 4,120 in 1880 to 19,450 by 1910, fueled by a 320% boom in mill jobs."
+    ),
+    (
+        "The archaeological excavation uncovered 34 ceramic vessels dating to approximately 450 BCE, situated 3.2 meters beneath strata layer IV.",
+        "Archaeologists unearthed 34 ceramic pots dating to around 450 BCE, buried 3.2 meters under sediment layer IV."
+    ),
+    (
+        "Statistical regression analysis yielded an R-squared value of 0.814 (F = 42.1, p < 0.001), confirming that socioeconomic status accounted for 81.4% of outcome variance.",
+        "The regression model returned an R-squared of 0.814 (F = 42.1, p < 0.001), indicating socioeconomic background explained 81.4% of the variance."
+    ),
+    (
+        "Enrollment in STEM disciplines rose by 22.5% between 2020 and 2025, while humanities matriculation experienced a 9.3% reduction over the identical period.",
+        "Between 2020 and 2025, STEM enrollment jumped 22.5%. During that same stretch, humanities majors dropped 9.3%."
+    ),
+    (
+        "The fellowship grant provides $38,000 in stipend support plus $4,500 for travel across a 9-month residential term commencing September 1, 2026.",
+        "The fellowship includes a $38,000 living stipend and $4,500 in travel funding for a 9-month stay starting September 1, 2026."
+    ),
+    (
+        "Peer-reviewed findings were published in Volume 44, Issue 2 of the Journal of Applied Physics, citing 62 prior publications across 14 pages.",
+        "The study appeared in Volume 44, Issue 2 of the Journal of Applied Physics, referencing 62 earlier papers across 14 pages."
+    ),
+    (
+        "Laboratory assays revealed that enzyme activity peaked at pH 6.8 before declining sharply by 75% once acidity reached pH 4.2.",
+        "Enzyme activity reached its high point at pH 6.8, then plunged 75% as acidity hit pH 4.2."
+    ),
+    (
+        "Double-blind evaluations of 300 test essays showed human graders agreeing with rubric standards 88% of the time, compared to 84% for automated scoring tools.",
+        "Across 300 blinded essays, human evaluators aligned with the rubric 88% of the time, slightly ahead of automated tools at 84%."
+    ),
+    (
+        "Doctoral candidate defense presentations are capped at 45 minutes, followed by 30 minutes of committee interrogation and 15 minutes of closed deliberation.",
+        "PhD thesis defenses allow 45 minutes for the talk, 30 minutes for committee questions, and a 15-minute closed-door vote."
+    ),
+
+    # 7. Customer Support, E-Commerce & Logistics
+    (
+        "Your order #98214 shipped on October 11, 2025, via FedEx Ground with tracking number 7821-4491-0021, and is scheduled for delivery before 8:00 PM on October 14.",
+        "Great news! Your order #98214 shipped on October 11, 2025, via FedEx Ground (tracking 7821-4491-0021). Expect it at your door before 8:00 PM on October 14."
+    ),
+    (
+        "We have processed a partial refund of $49.99 back to your Visa ending in 4012, which should reflect in your account within 3 to 5 business days.",
+        "We've refunded $49.99 to your Visa ending in 4012. You should see that show up in your bank account in 3 to 5 business days."
+    ),
+    (
+        "Flight DL-492 from Atlanta to Seattle was delayed by 1 hour and 45 minutes due to maintenance on engine 2, arriving at Gate B14 at 21:15 PST.",
+        "Flight DL-492 from Atlanta to Seattle ran 1 hour and 45 minutes late for engine 2 maintenance, landing at Gate B14 by 21:15 PST."
+    ),
+    (
+        "Return requests must be initiated within 30 days of receipt, and items discounted by more than 40% are strictly non-refundable.",
+        "Returns must be started within 30 days of delivery. Items discounted over 40% can't be refunded."
+    ),
+    (
+        "Warehouse distribution throughput rose to 18,500 packages per hour on Cyber Monday, achieving a 99.4% on-time dispatch rate.",
+        "On Cyber Monday, the distribution center sorted 18,500 packages an hour, hitting a 99.4% on-time ship rate."
+    ),
+    (
+        "The promotional coupon code SAVE25 provides $25 off orders exceeding $100, valid until 11:59 PM EST on November 30, 2025.",
+        "Use code SAVE25 at checkout for $25 off orders above $100. It expires at 11:59 PM EST on November 30, 2025."
+    ),
+    (
+        "Freight transit times between Rotterdam and Singapore averaged 24 days across Q3 2025, a 3-day improvement over 2024 averages.",
+        "Shipping lanes between Rotterdam and Singapore took 24 days on average in Q3 2025—shaving 3 days off last year's pace."
+    ),
+    (
+        "Customer satisfaction scores improved from 4.1 to 4.7 out of 5 stars following the rollout of 24/7 live chat support on August 1, 2025.",
+        "Customer ratings climbed from 4.1 to 4.7 out of 5 stars after 24/7 live chat debuted on August 1, 2025."
+    ),
+    (
+        "Inventory levels for SKU-8842 dropped to 14 units at warehouse facility #3, triggering an automated replenishment purchase order for 500 units.",
+        "Stock for SKU-8842 dipped to 14 units at facility #3, which automatically placed a restock order for 500 more."
+    ),
+    (
+        "Subscription renewal billing occurs automatically on the 1st of every month for $19.99, but members may cancel anytime before 23:59 on the last calendar day.",
+        "Your $19.99 subscription renews on the 1st of each month. You can cancel anytime before 23:59 on the last day of the month."
+    ),
+
+    # 8. Everyday Conversational & Human Narratives
+    (
+        "I wanted to let you know that our family road trip will start on July 4, 2026. We will drive 450 miles to Lake Tahoe, spend 5 nights at the cabin, and return by July 10.",
+        "Just letting you know our family road trip kicks off July 4, 2026! We'll drive 450 miles up to Lake Tahoe, stay 5 nights at the cabin, and head home by July 10."
+    ),
+    (
+        "The marathon race kicked off at 07:00 AM on Sunday with 22,000 registered runners. Mark finished in 3 hours and 14 minutes, placing 428th overall.",
+        "The marathon got underway at 07:00 AM Sunday with 22,000 runners at the starting line. Mark crossed the finish line in 3 hours and 14 minutes, placing 428th."
+    ),
+    (
+        "The restaurant had a 45-minute wait for a table of 4 on Saturday evening, but the bill was only $84 including a 20% tip.",
+        "We waited about 45 minutes for a 4-person table on Saturday night, but dinner was surprisingly reasonable—just $84 with a 20% tip included."
+    ),
+    (
+        "We adopted a 2-year-old rescue retriever weighing 58 lbs on May 14, 2025, from the local shelter for a $150 adoption fee.",
+        "On May 14, 2025, we brought home a 2-year-old rescue retriever weighing 58 lbs from the shelter. Her adoption fee was only $150."
+    ),
+    (
+        "The apartment measures 850 square feet with 2 bedrooms and 1 bath, renting for $1,650 per month with a $1,000 security deposit.",
+        "The place is 850 square feet with 2 bedrooms and 1 bath, renting for $1,650 a month with a $1,000 deposit."
+    ),
+    (
+        "Our electric utility bill was $142 in August 2025, down 24% compared to $188 in August 2024, after installing a smart thermostat.",
+        "Our electric bill dropped to $142 in August 2025—a 24% savings over the $188 we paid in August 2024, thanks to our new smart thermostat."
+    ),
+    (
+        "The used vehicle had 48,200 miles on the odometer and was purchased for $16,800 on September 3, 2025, after negotiating a $1,200 discount.",
+        "We bought the used car on September 3, 2025, for $16,800 with 48,200 miles on the dash, after talking the seller down $1,200."
+    ),
+    (
+        "She ran 5 miles every morning at 06:15 AM throughout September, losing 6.5 lbs before her sister's wedding on October 4, 2025.",
+        "She logged 5 miles every morning at 06:15 AM all through September, shedding 6.5 lbs ahead of her sister's wedding on October 4, 2025."
+    ),
+    (
+        "The music concert drew 18,500 fans to the outdoor arena on August 22, 2025. Tickets cost $65 each and sold out in 14 minutes.",
+        "The concert packed 18,500 fans into the amphitheater on August 22, 2025. At $65 apiece, tickets were gone in 14 minutes."
+    ),
+    (
+        "The bakery opens at 06:30 AM Tuesday through Saturday, serving over 350 fresh croissants daily at $3.75 each.",
+        "The bakery opens its doors at 06:30 AM Tuesday through Saturday, turning out more than 350 fresh croissants every morning at $3.75 each."
+    )
 ]
 
-def save_dataset(filepath="expanded_training_data_14b.jsonl"):
-    with open(filepath, "w", encoding="utf-8") as f:
-        for item in DATASET:
+def generate_dataset():
+    dataset = [make_sample(user_text, rewrite) for user_text, rewrite in SAMPLES]
+    output_path = Path(__file__).parent / "expanded_training_data_14b.jsonl"
+    with open(output_path, "w", encoding="utf-8") as f:
+        for item in dataset:
             f.write(json.dumps(item, ensure_ascii=False) + "\n")
-    print(f"Saved {len(DATASET)} high-quality samples to {filepath}")
+    print(f" Successfully generated {len(dataset)} rich, diverse training pairs -> {output_path}")
 
 if __name__ == "__main__":
-    save_dataset()
+    generate_dataset()
