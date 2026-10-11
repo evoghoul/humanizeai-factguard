@@ -138,7 +138,26 @@ def humanize(req: HumanizeRequest):
 
         messages = [
             {"role": "system", "content": SYSTEM_INSTRUCTION},
-            {"role": "user", "content": f"Tone: {req.tone}\nStrength: {req.strength}\n\nOriginal Text:\n{req.text}"}
+            {
+                "role": "user",
+                "content": "Tone: Conversational\nStrength: Heavy\n\nOriginal Text:\nArtificial intelligence has transformed the modern business landscape in profound ways. Companies worldwide are leveraging machine learning to enhance operational efficiency and foster innovation. It is important to note that organizations must adopt strategic frameworks to navigate these technological changes seamlessly and remain competitive in today's digital era."
+            },
+            {
+                "role": "assistant",
+                "content": "AI has completely upended the modern workplace—and it happened fast. Teams everywhere are leaning on machine learning to speed up clunky workflows and spark fresh ideas. But here's the catch: without a practical game plan, jumping headfirst into these tools usually causes more headaches than breakthroughs. In other words, you need a strategy, not just shiny software."
+            },
+            {
+                "role": "user",
+                "content": "Tone: Professional\nStrength: Medium\n\nOriginal Text:\nThe quarterly financial report demonstrates significant revenue growth of 18.5% reaching $4.2 million on September 30, 2025. However, leadership must remain vigilant regarding market volatility."
+            },
+            {
+                "role": "assistant",
+                "content": "By September 30, 2025, revenue jumped 18.5% to hit $4.2 million. Solid numbers. Even so, leadership can't afford to get comfortable—market swings are still a very real threat."
+            },
+            {
+                "role": "user",
+                "content": f"Tone: {req.tone}\nStrength: {req.strength}\n\nOriginal Text:\n{req.text}"
+            }
         ]
         prompt = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
         inputs = tokenizer(prompt, return_tensors="pt").to(device)
@@ -154,9 +173,9 @@ def humanize(req: HumanizeRequest):
                 **inputs,
                 max_new_tokens=dynamic_max_tokens,
                 do_sample=True,
-                temperature=0.85,
-                top_p=0.92,
-                repetition_penalty=1.12,
+                temperature=0.9,
+                top_p=0.95,
+                repetition_penalty=1.15,
                 eos_token_id=eos_ids,
                 use_cache=True,
                 pad_token_id=tokenizer.pad_token_id or tokenizer.eos_token_id
