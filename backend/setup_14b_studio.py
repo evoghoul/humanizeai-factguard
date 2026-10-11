@@ -146,20 +146,10 @@ def factguard_check(original: str, rewritten: str) -> dict:
     print("Created factguard.py")
 
     # 3. Training Script
-    train_code = '''import os
-import torch
+    train_code = '''import os, torch
 from datasets import load_dataset
-from transformers import (
-    AutoModelForCausalLM,
-    AutoTokenizer,
-    BitsAndBytesConfig,
-    TrainingArguments
-)
-from peft import (
-    LoraConfig,
-    get_peft_model,
-    prepare_model_for_kbit_training
-)
+from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
+from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
 from trl import SFTTrainer
 
 MODEL_ID = "Qwen/Qwen2.5-14B-Instruct"
@@ -168,7 +158,7 @@ OUTPUT_DIR = "humanizeai_14b_lora"
 
 def main():
     print("==================================================")
-    print(f"Starting Qwen2.5-14B-Instruct Fine-Tuning on GPU")
+    print("Starting Qwen2.5-14B-Instruct Fine-Tuning on GPU")
     print("==================================================")
     
     bnb_config = BitsAndBytesConfig(
@@ -218,28 +208,55 @@ def main():
         
     formatted_dataset = dataset.map(format_chat, batched=True)
     
-    training_args = TrainingArguments(
-        output_dir=OUTPUT_DIR,
-        per_device_train_batch_size=1,
-        gradient_accumulation_steps=4,
-        warmup_ratio=0.05,
-        num_train_epochs=3,
-        learning_rate=2e-4,
-        bf16=torch.cuda.is_bf16_supported(),
-        fp16=not torch.cuda.is_bf16_supported(),
-        logging_steps=2,
-        optim="paged_adamw_8bit",
-        save_strategy="epoch",
-        report_to="none"
-    )
-    
-    trainer = SFTTrainer(
-        model=model,
-        train_dataset=formatted_dataset,
-        dataset_text_field="text",
-        max_seq_length=1024,
-        args=training_args
-    )
+    trainer = None
+    try:
+        from trl import SFTTrainer, SFTConfig
+        args = SFTConfig(
+            output_dir=OUTPUT_DIR,
+            dataset_text_field="text",
+            max_length=1024,
+            per_device_train_batch_size=1,
+            gradient_accumulation_steps=4,
+            learning_rate=2e-4,
+            num_train_epochs=3,
+            logging_steps=2,
+            optim="paged_adamw_8bit",
+            bf16=torch.cuda.is_bf16_supported(),
+            report_to="none"
+        )
+        trainer = SFTTrainer(
+            model=model,
+            train_dataset=formatted_dataset,
+            args=args,
+        )
+        print("Initialized training with trl SFTTrainer successfully.")
+    except Exception as e:
+        print(f"SFTTrainer setup notice ({e}), falling back to transformers.Trainer...")
+        from transformers import Trainer, TrainingArguments, DataCollatorForLanguageModeling
+        
+        def tokenize_batch(batch):
+            return tokenizer(batch["text"], truncation=True, max_length=1024)
+            
+        tokenized_ds = formatted_dataset.map(tokenize_batch, batched=True, remove_columns=formatted_dataset.column_names)
+        
+        args = TrainingArguments(
+            output_dir=OUTPUT_DIR,
+            per_device_train_batch_size=1,
+            gradient_accumulation_steps=4,
+            learning_rate=2e-4,
+            num_train_epochs=3,
+            logging_steps=2,
+            optim="paged_adamw_8bit",
+            bf16=torch.cuda.is_bf16_supported(),
+            report_to="none"
+        )
+        trainer = Trainer(
+            model=model,
+            train_dataset=tokenized_ds,
+            args=args,
+            data_collator=DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=False)
+        )
+        print("Initialized training with standard transformers.Trainer successfully.")
     
     print("Fine-tuning in progress...")
     trainer.train()
