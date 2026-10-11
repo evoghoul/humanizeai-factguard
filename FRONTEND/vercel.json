@@ -1,5 +1,6 @@
 {
   "rewrites": [
+    { "source": "/humanize", "destination": "https://humanizeai-backend-tfzm.onrender.com/humanize" },
     { "source": "/api/refine", "destination": "/api/refine" },
     { "source": "/((?!api/).*)", "destination": "/index.html" }
   ]

@@ -116,11 +116,14 @@ export async function humanizeText(
   const configuredBaseUrl = (import.meta.env.VITE_API_BASE_URL || "").trim().replace(/\/+$/, "")
   const endpoints: string[] = []
   
-  // 1. Relative /humanize (Vite proxy - completely immune to CORS)
+  // 1. Relative /humanize (Vite / Vercel proxy - completely immune to CORS)
   endpoints.push(`${import.meta.env.BASE_URL}humanize`)
   
-  // 2. Direct local FastAPI backend (has full CORS headers)
+  // 2. Direct local FastAPI backend (if running locally)
   endpoints.push("http://127.0.0.1:8000/humanize")
+
+  // 3. Live Render production backend
+  endpoints.push("https://humanizeai-backend-tfzm.onrender.com/humanize")
   
   // 3. Configured base URL if specified
   if (configuredBaseUrl) {
