@@ -74,7 +74,8 @@ def main():
                 gradient_accumulation_steps=4,
                 learning_rate=2e-4,
                 num_train_epochs=3,
-                logging_steps=2,
+                logging_steps=10,
+                save_strategy="epoch",
                 optim="paged_adamw_8bit",
                 bf16=torch.cuda.is_bf16_supported(),
                 report_to="none"
@@ -89,7 +90,8 @@ def main():
                 gradient_accumulation_steps=4,
                 learning_rate=2e-4,
                 num_train_epochs=3,
-                logging_steps=2,
+                logging_steps=10,
+                save_strategy="epoch",
                 optim="paged_adamw_8bit",
                 bf16=torch.cuda.is_bf16_supported(),
                 report_to="none"
@@ -115,7 +117,8 @@ def main():
             gradient_accumulation_steps=4,
             learning_rate=2e-4,
             num_train_epochs=3,
-            logging_steps=2,
+            logging_steps=10,
+            save_strategy="epoch",
             optim="paged_adamw_8bit",
             bf16=torch.cuda.is_bf16_supported(),
             report_to="none"

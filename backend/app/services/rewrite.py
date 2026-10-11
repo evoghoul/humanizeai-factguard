@@ -116,14 +116,18 @@ class HeuristicHumanizer(ModelProviderInterface):
 
 DemoProvider = HeuristicHumanizer
 
-ANTI_AI_SYSTEM_PROMPT = """You are HumanizeAI, an expert human editor. Your mission is to rewrite the input text so it reads completely like authentic human writing and passes all AI detectors (GPTZero, Turnitin, Originality.ai) with 0% AI detection.
+ANTI_AI_SYSTEM_PROMPT = """You are HumanizeAI, an expert human editor. Your goal is to rewrite the input text so it reads completely like authentic human writing, strictly adhering to Wikipedia's "Signs of AI-generated text" negative constraints and passing all AI detectors (GPTZero, Turnitin, Originality.ai).
 
-CRITICAL RULES TO PASS GPTZERO:
-1. EXTREME BURSTINESS: Vary your sentence lengths dramatically. Mix short, punchy 2-to-5 word sentences or fragments ("Fair enough.", "Hardly surprising.", "Not quite.") with long, multi-clause thoughts (18-28 words). Never write consecutive sentences of uniform length.
-2. UNPREDICTABLE SYNTAX & PERPLEXITY: Use em-dashes (—) to introduce sudden turns, colons to set up punchlines, and parentheticals like (to be fair, ...) or (at least for now). Use conversational conjunction starts ("And yet,", "But here's the catch:").
-3. BAN AI CLICHÉS & TROPES: Strictly forbid words like: delve, testament, tapestry, pivotal, beacon, crucial, foster, spearhead, furthermore, moreover, in conclusion, realm, landscape, game-changer, seamless, paramount, multifaceted, vibrant, revolutionize, operational efficiency, in today's fast-paced world.
-4. FACTGUARD INVARIANTS (100% INVIOLABLE): Strictly preserve all numbers, dates, years, currencies ($/€/£), percentages (%), proper names, and negative conditions (not, never, cannot). Never drop, round, or alter any fact.
-5. STRICT OUTPUT: Output ONLY the raw rewritten text. Absolutely NO preambles ("Sure!", "Here is a..."), NO quotation marks, and NO closing explanations."""
+STRICT WIKIPEDIA ANTI-AI NEGATIVE CONSTRAINTS (NEVER BREAK THESE):
+1. NO NEGATIVE PARALLELISM: Strictly forbid "not just X, but Y", "it's not about X, it's about Y", or "not only X, but also Y". State claims directly without formulaic contrast.
+2. NO RULE OF THREES: Never list three adjectives, adverbs, or nouns in a rhythmic row (e.g. "innovative, efficient, and transformative"). Use a single strong word.
+3. NO "FALSE RANGES": Never use the lazy sweep "From X to Y" (e.g. "From startups to enterprises", "From marketing to engineering").
+4. ZERO AI VOCABULARY: Total ban on AI dead-giveaways: delve, intricate, tapestry, pivotal, beacon, crucial, foster, spearhead, furthermore, moreover, in conclusion, realm, landscape, game-changer, seamless, paramount, multifaceted, vibrant, revolutionize, underscore, shed light on, testament, holistic, enhance, cornerstone, in today's fast-paced world.
+5. NO COMPULSIVE SUMMARIES: Never end with a generic wrap-up or moralizing bow ("In summary,", "Overall, this highlights...", "Ultimately, ..."). When the thought ends, stop writing.
+6. NO VAGUE ATTRIBUTION: Avoid empty hedges ("It is important to note that", "Some critics argue", "It remains to be seen").
+7. EXTREME BURSTINESS: Wildly vary sentence lengths. Alternate 2-to-5 word punchy sentences/fragments ("Fair enough.", "Hardly surprising.", "Not quite.") with natural 18-to-26 word compound thoughts. Never write consecutive sentences of equal length.
+8. FACTGUARD INVARIANTS (100% INVIOLABLE): Strictly preserve every number, date, year, currency ($/€/£), percentage (%), proper name, and negative condition (not, never, cannot). Never drop, round, or alter any fact.
+9. STRICT FORMAT: Output ONLY the raw rewritten text. Absolutely NO conversational preambles ("Sure!", "Here is a..."), NO quotation marks, and NO explanations."""
 
 def clean_model_output(text: str) -> str:
     """Strip any conversational preambles like 'Sure! Here is...' from LLM output."""
@@ -147,7 +151,7 @@ def clean_model_output(text: str) -> str:
 def enhance_burstiness(text: str, original_text: str) -> str:
     """
     Post-processing stylometric enhancer:
-    Strips residual AI tropes, injects natural rhythm markers,
+    Strips Wikipedia AI tells, residual AI tropes, injects natural rhythm markers,
     and rigorously verifies FactGuard invariants before returning.
     """
     if not text:
@@ -157,6 +161,10 @@ def enhance_burstiness(text: str, original_text: str) -> str:
     cleaned = clean_model_output(text)
     enhanced = cleaned
     
+    # 1. Strip compulsive summaries at end
+    enhanced = re.sub(r"\n*(?:In conclusion|In summary|Overall|Ultimately),.*$", "", enhanced, flags=re.IGNORECASE).strip()
+    
+    # 2. Residual AI Tropes
     residual_tropes = {
         r"\bin profound ways\b": "completely",
         r"\bplays a vital role in\b": "is key to",
