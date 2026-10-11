@@ -130,29 +130,66 @@ SEED_SAMPLES = [
     )
 ]
 
-# Combinatorial Generator for Massive Scaling (600+ Samples)
-# Embeds Wikipedia's AI tells in the input (Rule of threes, Negative parallelism, False ranges, Clichés)
+# ==============================================================================
+# Combinatorial Generator for Massive Scaling (3,600+ FactGuard-Validated Pairs)
+# Embeds Wikipedia's AI tells in the input (Rule of threes, Negative parallelism,
+# False ranges, AI Clichés like delve/tapestry/pivotal, Compulsive summaries)
 # and produces pure human prose with high burstiness, zero clichés, and 100% FactGuard preservation.
+# ==============================================================================
 
-COMPANIES = ["Apex Holdings", "Vanguard Logistics", "Starlight Therapeutics", "Novus Cloud", "Meridian Media", "Aegis Robotics", "Quantix Capital", "Solaria Energy", "Beacon Bio", "Nexus Health"]
-EXECUTIVES = ["Dr. Sarah Lin", "Marcus Vance", "Elena Rostova", "Julian Thorne", "Claire Zhang", "Devon Miller", "Priya Patel", "Carlos Mendoza", "David Sterling", "Hannah Abbott"]
-DATES = ["January 14, 2025", "March 22, 2025", "June 18, 2025", "September 30, 2025", "November 12, 2025", "February 5, 2026", "April 19, 2026", "July 8, 2026", "October 24, 2026"]
-CURRENCIES = ["$1.2M", "$3.5M", "$8.4M", "$14.2M", "$28.5M", "€2.4M", "€5.1M", "€9.8M", "£1.6M", "£4.2M"]
-PERCENTAGES = ["4.5%", "8.2%", "12.4%", "15.8%", "19.5%", "24.2%", "31.0%", "45.5%", "68.2%"]
-METRICS = ["120 ms", "450 users", "1,200 requests", "3,500 units", "18,000 downloads", "42 nodes", "85 servers", "250 transactions"]
+COMPANIES = [
+    "Apex Holdings", "Vanguard Logistics", "Starlight Therapeutics", "Novus Cloud", "Meridian Media",
+    "Aegis Robotics", "Quantix Capital", "Solaria Energy", "Beacon Bio", "Nexus Health",
+    "Kestrel Dynamics", "Pinnacle Financial", "Aura Genomics", "Crestview Media", "Orion Software",
+    "Sentry Cybersecurity", "Veritas Pharma", "Helios Mobility", "Terra Agriculture", "Vortex Telecom",
+    "Silverline Capital", "Polaris Systems", "Omni Retail", "Zephyr Aerospace", "Cascade Energy"
+]
 
-def generate_procedural_samples(target_count=650):
+EXECUTIVES = [
+    "Dr. Sarah Lin", "Marcus Vance", "Elena Rostova", "Julian Thorne", "Claire Zhang",
+    "Devon Miller", "Priya Patel", "Carlos Mendoza", "David Sterling", "Hannah Abbott",
+    "Dr. Aris Thorne", "Rachel Vance", "Siddharth Nair", "Evelyn Reed", "Dmitri Volkov",
+    "Alicia Gomez", "Kofi Mensah", "Nadia Petrov", "Liam O'Connor", "Mei-Ling Zhou"
+]
+
+DATES = [
+    "January 14, 2025", "February 28, 2025", "March 22, 2025", "April 15, 2025",
+    "May 19, 2025", "June 18, 2025", "July 26, 2025", "August 12, 2025",
+    "September 30, 2025", "October 14, 2025", "November 12, 2025", "December 5, 2025",
+    "January 22, 2026", "February 5, 2026", "March 18, 2026", "April 19, 2026",
+    "May 24, 2026", "June 15, 2026", "July 8, 2026", "August 20, 2026",
+    "September 14, 2026", "October 24, 2026", "November 9, 2026", "December 18, 2026"
+]
+
+CURRENCIES = [
+    "$1.2M", "$2.8M", "$3.5M", "$5.4M", "$8.4M", "$12.4M", "$14.2M", "$18.5M", "$28.5M", "$45.0M",
+    "€1.8M", "€2.4M", "€3.2M", "€5.1M", "€7.6M", "€9.8M", "€15.2M", "€22.0M",
+    "£1.6M", "£2.9M", "£4.2M", "£6.8M", "£10.5M"
+]
+
+PERCENTAGES = [
+    "3.2%", "4.5%", "6.8%", "8.2%", "10.5%", "12.4%", "14.8%", "15.8%", "18.5%", "19.5%",
+    "21.0%", "24.2%", "28.4%", "31.0%", "35.5%", "42.0%", "45.5%", "54.2%", "68.2%", "74.5%"
+]
+
+METRICS = [
+    "48 ms", "85 ms", "120 ms", "180 ms", "250 ms", "450 users", "1,200 requests", "3,500 units",
+    "18,000 downloads", "42 nodes", "85 servers", "250 transactions", "99.98% uptime", "99.95% uptime"
+]
+
+CITIES = ["Austin", "Berlin", "Singapore", "Toronto", "Dublin", "Zurich", "Tokyo", "London", "New York", "Stockholm"]
+
+
+def generate_procedural_samples(target_per_template: int = 155):
     procedural = []
-    
-    # Template Pattern A: Corporate Earnings & Strategy
-    # AI Input: Negative parallelism ("not just X, but Y") + False range ("From X to Y") + Clichés ("pivotal testament")
-    for i in range(120):
+
+    # 1. Corporate Earnings & Strategic Milestones
+    for i in range(target_per_template):
         comp = COMPANIES[i % len(COMPANIES)]
         exec_name = EXECUTIVES[i % len(EXECUTIVES)]
         date = DATES[i % len(DATES)]
         curr = CURRENCIES[i % len(CURRENCIES)]
         pct = PERCENTAGES[i % len(PERCENTAGES)]
-        
         user_text = (
             f"In today's fast-paced corporate landscape, it is pivotal to delve into the earnings report released on {date}. "
             f"{comp} demonstrated that it is not merely a financial gain, but a transformative milestone, increasing quarterly revenue by {pct} to reach {curr}. "
@@ -167,16 +204,14 @@ def generate_procedural_samples(target_count=650):
         )
         procedural.append((user_text, human_text))
 
-    # Template Pattern B: Clinical Trials & Medical Research
-    # AI Input: Rule of threes ("safe, effective, and reliable") + Clichés ("delve into", "crucial milestone")
-    for i in range(110):
-        comp = COMPANIES[(i + 2) % len(COMPANIES)]
-        exec_name = EXECUTIVES[(i + 3) % len(EXECUTIVES)]
+    # 2. Clinical Trials & Biotechnology
+    for i in range(target_per_template):
+        comp = COMPANIES[(i + 1) % len(COMPANIES)]
+        exec_name = EXECUTIVES[(i + 2) % len(EXECUTIVES)]
         date = DATES[(i + 1) % len(DATES)]
         pct = PERCENTAGES[(i + 2) % len(PERCENTAGES)]
-        pts = 40 + (i * 7) % 250
-        dose = 25 + (i * 15) % 300
-        
+        pts = 45 + (i * 7) % 240
+        dose = 25 + (i * 15) % 250
         user_text = (
             f"Delving into the Phase 2 clinical evaluation finalized on {date}, {comp} tested a {dose}mg dosage across {pts} patient cohorts. "
             f"The therapy proved to be safe, effective, and reliable, demonstrating a {pct} reduction in target symptom progression. "
@@ -191,15 +226,13 @@ def generate_procedural_samples(target_count=650):
         )
         procedural.append((user_text, human_text))
 
-    # Template Pattern C: Cloud Infrastructure & Tech Systems
-    # AI Input: "From small queries to large databases" (False range) + "not only X but also Y"
-    for i in range(110):
-        comp = COMPANIES[(i + 4) % len(COMPANIES)]
-        date = DATES[(i + 3) % len(DATES)]
-        pct = PERCENTAGES[(i + 4) % len(PERCENTAGES)]
+    # 3. Cloud Infrastructure & DevOps
+    for i in range(target_per_template):
+        comp = COMPANIES[(i + 2) % len(COMPANIES)]
+        date = DATES[(i + 2) % len(DATES)]
+        pct = PERCENTAGES[(i + 3) % len(PERCENTAGES)]
         metric = METRICS[i % len(METRICS)]
         curr = CURRENCIES[(i + 1) % len(CURRENCIES)]
-        
         user_text = (
             f"From microservices to massive enterprise clusters, navigating the cloud landscape requires seamless operational resilience. "
             f"On {date}, {comp} completed its database migration, saving {curr} while maintaining latency under {metric}. "
@@ -214,15 +247,13 @@ def generate_procedural_samples(target_count=650):
         )
         procedural.append((user_text, human_text))
 
-    # Template Pattern D: Legal, Contracts & Regulatory Audits
-    # AI Input: "intricate tapestry", "paramount importance", "not just compliance, but governance"
-    for i in range(100):
-        comp = COMPANIES[(i + 1) % len(COMPANIES)]
+    # 4. Legal Compliance & Master Agreements
+    for i in range(target_per_template):
+        comp = COMPANIES[(i + 3) % len(COMPANIES)]
         exec_name = EXECUTIVES[(i + 4) % len(EXECUTIVES)]
-        date = DATES[(i + 4) % len(DATES)]
+        date = DATES[(i + 3) % len(DATES)]
         curr = CURRENCIES[(i + 3) % len(CURRENCIES)]
-        pct = PERCENTAGES[(i + 1) % len(PERCENTAGES)]
-        
+        pct = PERCENTAGES[(i + 4) % len(PERCENTAGES)]
         user_text = (
             f"It is of paramount importance to delve into the regulatory compliance audit finalized on {date}. "
             f"The internal legal counsel reviewed an intricate tapestry of agreements involving {curr} in potential vendor obligations. "
@@ -237,14 +268,12 @@ def generate_procedural_samples(target_count=650):
         )
         procedural.append((user_text, human_text))
 
-    # Template Pattern E: HR, Hiring & Candidate Communications
-    # AI Input: "vibrant culture", "rule of threes: dynamic, passionate, and dedicated"
-    for i in range(110):
+    # 5. HR Hiring & Talent Acquisitions
+    for i in range(target_per_template):
         exec_name = EXECUTIVES[(i + 5) % len(EXECUTIVES)]
-        date = DATES[(i + 5) % len(DATES)]
+        date = DATES[(i + 4) % len(DATES)]
         time_slot = f"{9 + (i % 8)}:30 AM"
-        num_cands = 12 + (i * 3) % 45
-        
+        num_cands = 14 + (i * 3) % 40
         user_text = (
             f"I am writing to formally communicate that the interview series for our {num_cands} shortlisted candidates will commence on {date} at {time_slot}. "
             f"Our company seeks candidates who are dynamic, passionate, and dedicated to foster our vibrant corporate mission. "
@@ -258,13 +287,12 @@ def generate_procedural_samples(target_count=650):
         )
         procedural.append((user_text, human_text))
 
-    # Template Pattern F: Everyday Logistics & Personal Narratives
-    for i in range(100):
-        date = DATES[(i + 6) % len(DATES)]
-        miles = 150 + (i * 35) % 600
+    # 6. Logistics & Travel Road Trips
+    for i in range(target_per_template):
+        date = DATES[(i + 5) % len(DATES)]
+        miles = 180 + (i * 35) % 550
         days = 3 + (i % 7)
-        cost = 450 + (i * 75) % 1800
-        
+        cost = 420 + (i * 65) % 1500
         user_text = (
             f"In order to embark on our family vacation scheduled for {date}, we will journey across {miles} miles over {days} days. "
             f"The overall expenditure did not exceed ${cost}. "
@@ -277,39 +305,409 @@ def generate_procedural_samples(target_count=650):
             f"Great scenery, zero car trouble, and the kids actually slept in the back."
         )
         procedural.append((user_text, human_text))
-        
+
+    # 7. Commercial Real Estate & Asset Purchases
+    for i in range(target_per_template):
+        comp = COMPANIES[(i + 4) % len(COMPANIES)]
+        exec_name = EXECUTIVES[(i + 6) % len(EXECUTIVES)]
+        date = DATES[(i + 6) % len(DATES)]
+        curr = CURRENCIES[(i + 4) % len(CURRENCIES)]
+        sqft = 25000 + (i * 2500) % 95000
+        pct = PERCENTAGES[(i + 5) % len(PERCENTAGES)]
+        user_text = (
+            f"In the burgeoning real estate landscape, {comp} spearheaded an acquisition on {date} valued at {curr}. "
+            f"The asset comprises {sqft} square feet, boasting a projected cap rate improvement of {pct}. "
+            f"From urban developments to suburban commercial parks, {exec_name} praised the property as modern, efficient, and sustainable. "
+            f"In conclusion, this marks a pivotal cornerstone in their spatial portfolio."
+        )
+        human_text = (
+            f"On {date}, {comp} bought an office asset for {curr}. "
+            f"The site spans {sqft} square feet, with the purchase team targeting a {pct} bump in cap rates. "
+            f"{exec_name} noted that existing tenants have long-term leases locked through the decade."
+        )
+        procedural.append((user_text, human_text))
+
+    # 8. Supply Chain Logistics & Component Manufacturing
+    for i in range(target_per_template):
+        comp = COMPANIES[(i + 5) % len(COMPANIES)]
+        date = DATES[(i + 7) % len(DATES)]
+        weeks = 4 + (i % 8)
+        pct = PERCENTAGES[(i + 6) % len(PERCENTAGES)]
+        units = 15000 + (i * 2500) % 80000
+        curr = CURRENCIES[(i + 2) % len(CURRENCIES)]
+        user_text = (
+            f"Delving into the global supply chain, {comp} restructured component shipments on {date}. "
+            f"The average manufacturing lead time contracted to {weeks} weeks, saving {curr} while defect frequency fell by {pct}. "
+            f"The plant assembled {units} units, verifying that operations remain agile, robust, and dependable. "
+            f"Ultimately, this represents a game-changing paradigm in operational excellence."
+        )
+        human_text = (
+            f"{comp} reworked its parts shipping schedule on {date}. "
+            f"Lead times narrowed down to {weeks} weeks, saving {curr} in freight fees. "
+            f"Factory defects dropped by {pct} across the run of {units} units."
+        )
+        procedural.append((user_text, human_text))
+
+    # 9. SaaS Metrics & B2B Subscriptions
+    for i in range(target_per_template):
+        comp = COMPANIES[(i + 6) % len(COMPANIES)]
+        exec_name = EXECUTIVES[(i + 7) % len(EXECUTIVES)]
+        date = DATES[(i + 8) % len(DATES)]
+        curr = CURRENCIES[(i + 5) % len(CURRENCIES)]
+        ret_pct = 105 + (i * 3) % 25
+        churn_pct = 1.2 + (i * 0.3) % 3.5
+        user_text = (
+            f"In the enterprise software realm, {comp} announced its ARR reached {curr} on {date}. "
+            f"{exec_name} articulated that it is not simply recurring software, but a comprehensive digital backbone. "
+            f"Net retention hit {ret_pct}% while logo churn did not exceed {churn_pct:.1f}%. "
+            f"Furthermore, this serves as a profound beacon of sustained user engagement."
+        )
+        human_text = (
+            f"{comp} crossed {curr} in annual recurring revenue on {date}. "
+            f"Net dollar retention came in at {ret_pct}%, and customer cancellations stayed low at {churn_pct:.1f}%. "
+            f"{exec_name} credited recent self-service onboarding improvements for the strong retention."
+        )
+        procedural.append((user_text, human_text))
+
+    # 10. Academic Research & Peer-Reviewed Studies
+    for i in range(target_per_template):
+        exec_name = EXECUTIVES[(i + 8) % len(EXECUTIVES)]
+        date = DATES[(i + 9) % len(DATES)]
+        n_size = 350 + (i * 45) % 1200
+        p_val = "p < 0.01" if i % 2 == 0 else "p < 0.05"
+        pct = PERCENTAGES[(i + 7) % len(PERCENTAGES)]
+        user_text = (
+            f"A comprehensive empirical study led by {exec_name} was published on {date}. "
+            f"Examining a rigorous cohort of {n_size} participants, the researchers verified efficacy at {p_val}. "
+            f"The primary outcome showed a {pct} improvement, demonstrating results that were thorough, replicable, and innovative. "
+            f"In conclusion, this illuminates an uncharted realm in computational epidemiology."
+        )
+        human_text = (
+            f"A study from {exec_name} came out on {date}, evaluating data from {n_size} participants. "
+            f"The trial confirmed statistical significance at {p_val}, showing a {pct} gain in the primary endpoint. "
+            f"Follow-up evaluations are slated for later this winter."
+        )
+        procedural.append((user_text, human_text))
+
+    # 11. Cybersecurity & Incident Mitigation
+    for i in range(target_per_template):
+        comp = COMPANIES[(i + 7) % len(COMPANIES)]
+        date = DATES[(i + 10) % len(DATES)]
+        cve_num = 2025 + (i % 2)
+        cve_id = f"CVE-{cve_num}-{1040 + i}"
+        hours = 24 + (i * 6) % 72
+        endpoints = 180 + (i * 25) % 800
+        user_text = (
+            f"Delving into information security, {comp} identified and neutralized vulnerability {cve_id} on {date}. "
+            f"The remediation window did not exceed {hours} hours across {endpoints} endpoints. "
+            f"Security architects confirmed that defenses are vigilant, adaptive, and proactive against bad actors. "
+            f"Overall, this stands as a pivotal testament to zero-trust resilience."
+        )
+        human_text = (
+            f"On {date}, {comp}'s security team patched {cve_id}. "
+            f"All {endpoints} affected endpoints were fully secured in under {hours} hours. "
+            f"No evidence of unauthorized credential access was uncovered during forensic log audits."
+        )
+        procedural.append((user_text, human_text))
+
+    # 12. Renewable Energy & Grid Decarbonization
+    for i in range(target_per_template):
+        comp = COMPANIES[(i + 8) % len(COMPANIES)]
+        date = DATES[(i + 11) % len(DATES)]
+        mw = 120 + (i * 25) % 450
+        co2 = 8000 + (i * 1200) % 35000
+        pct = PERCENTAGES[(i + 8) % len(PERCENTAGES)]
+        user_text = (
+            f"In the green energy landscape, {comp} connected a {mw} MW solar array on {date}. "
+            f"The installation reduces annual emissions by {co2} metric tons, boosting grid efficiency by {pct}. "
+            f"From rooftop installations to vast utility farms, it is not merely power generation, but environmental stewardship. "
+            f"In summary, it spearheads a beacon of sustainability."
+        )
+        human_text = (
+            f"{comp} activated its {mw} MW solar farm on {date}. "
+            f"The site is on track to eliminate {co2} metric tons of CO2 every year while pushing local grid efficiency up by {pct}. "
+            f"Power feed to local substations began that same afternoon."
+        )
+        procedural.append((user_text, human_text))
+
+    # 13. E-Commerce Holiday Operations & Peak Sales
+    for i in range(target_per_template):
+        comp = COMPANIES[(i + 9) % len(COMPANIES)]
+        date = DATES[(i + 12) % len(DATES)]
+        orders = 24000 + (i * 3500) % 95000
+        curr = CURRENCIES[(i + 6) % len(CURRENCIES)]
+        pct = PERCENTAGES[(i + 9) % len(PERCENTAGES)]
+        user_text = (
+            f"Navigating the e-commerce landscape during peak holidays, {comp} handled {orders} orders on {date}. "
+            f"Gross merchandise value crossed {curr}, reflecting a {pct} expansion over prior benchmarks. "
+            f"The checkout pipeline delivered an experience that was seamless, intuitive, and frictionless. "
+            f"In conclusion, this showcases unrivaled retail excellence."
+        )
+        human_text = (
+            f"During the holiday rush on {date}, {comp} processed {orders} orders. "
+            f"Total GMV cleared {curr}, up {pct} compared to last season. "
+            f"Payment processing ran without bottlenecks through the entire weekend."
+        )
+        procedural.append((user_text, human_text))
+
+    # 14. Genomics & CRISPR Editing
+    for i in range(target_per_template):
+        comp = COMPANIES[(i + 10) % len(COMPANIES)]
+        exec_name = EXECUTIVES[(i + 9) % len(EXECUTIVES)]
+        date = DATES[(i + 13) % len(DATES)]
+        loci = 4 + (i % 12)
+        cells = 25000 + (i * 5000) % 90000
+        pct = "0.05%" if i % 2 == 0 else "0.08%"
+        user_text = (
+            f"Delving into genetic engineering, {comp} presented genomic findings on {date}. "
+            f"{exec_name} modified {loci} target loci across {cells} donor cells, restricting off-target cleavages to {pct}. "
+            f"The assay proved to be precise, robust, and transformative for molecular biology. "
+            f"Overall, this marks a pivotal milestone in gene therapy."
+        )
+        human_text = (
+            f"On {date}, {comp} shared new gene-editing data. "
+            f"{exec_name}'s team targeted {loci} gene loci across {cells} donor cells, keeping off-target edits down at {pct}. "
+            f"Cell viability stayed above 92% throughout post-transfection checks."
+        )
+        procedural.append((user_text, human_text))
+
+    # 15. Venture Capital & Syndicate Financings
+    for i in range(target_per_template):
+        comp = COMPANIES[(i + 11) % len(COMPANIES)]
+        exec_name = EXECUTIVES[(i + 10) % len(EXECUTIVES)]
+        date = DATES[(i + 14) % len(DATES)]
+        curr_round = CURRENCIES[(i + 7) % len(CURRENCIES)]
+        curr_val = CURRENCIES[(i + 8) % len(CURRENCIES)]
+        pct = PERCENTAGES[(i + 1) % len(PERCENTAGES)]
+        user_text = (
+            f"In the high-stakes venture landscape, {comp} closed a {curr_round} financing round on {date} at a {curr_val} valuation. "
+            f"{exec_name} announced a {pct} equity allocation for early strategic partners. "
+            f"From seed inception to market maturity, the company fosters groundbreaking innovation. "
+            f"In conclusion, this serves as a beacon of entrepreneurial growth."
+        )
+        human_text = (
+            f"On {date}, {comp} finalized a {curr_round} funding round, pricing the business at {curr_val}. "
+            f"{exec_name} confirmed that lead investors took a {pct} equity stake. "
+            f"Capital will go toward doubling the technical engineering headcount."
+        )
+        procedural.append((user_text, human_text))
+
+    # 16. Higher Education & University Admissions
+    for i in range(target_per_template):
+        city = CITIES[i % len(CITIES)]
+        date = DATES[(i + 15) % len(DATES)]
+        apps = 18000 + (i * 2000) % 45000
+        pct = PERCENTAGES[(i + 3) % len(PERCENTAGES)]
+        curr = CURRENCIES[(i + 3) % len(CURRENCIES)]
+        user_text = (
+            f"Delving into academic admissions in {city}, university officials concluded application reviews on {date}. "
+            f"The admissions board evaluated {apps} candidate submissions, maintaining an acceptance rate of {pct}. "
+            f"Financial aid disbursements reached {curr}, proving the institution is equitable, prestigious, and transformative. "
+            f"In summary, it underscores a rich tapestry of scholarly potential."
+        )
+        human_text = (
+            f"University admissions in {city} wrapped up candidate selections on {date}. "
+            f"The office sorted through {apps} applications, admitting {pct} of the applicant pool. "
+            f"Need-based scholarships totaled {curr} for the incoming class."
+        )
+        procedural.append((user_text, human_text))
+
+    # 17. Automotive Engineering & EV Range Testing
+    for i in range(target_per_template):
+        comp = COMPANIES[(i + 12) % len(COMPANIES)]
+        date = DATES[(i + 16) % len(DATES)]
+        kwh = 75 + (i * 5) % 40
+        miles = 280 + (i * 15) % 160
+        mins = 18 + (i % 15)
+        pct = PERCENTAGES[(i + 7) % len(PERCENTAGES)]
+        user_text = (
+            f"In the burgeoning automotive realm, {comp} completed highway endurance evaluations on {date}. "
+            f"Equipped with a {kwh} kWh battery, the prototype achieved {miles} miles on a single charge. "
+            f"Fast charging replenished capacity in {mins} minutes, representing a {pct} gain in thermal management. "
+            f"Overall, this spearheads a pivotal transition in sustainable mobility."
+        )
+        human_text = (
+            f"{comp} finished track testing its new EV on {date}. "
+            f"With a {kwh} kWh pack, the test mule covered {miles} highway miles before needing a plug. "
+            f"DC fast charging took {mins} minutes, and regenerative braking improved efficiency by {pct}."
+        )
+        procedural.append((user_text, human_text))
+
+    # 18. Municipal Transit & Public Infrastructure
+    for i in range(target_per_template):
+        city = CITIES[(i + 2) % len(CITIES)]
+        date = DATES[(i + 17) % len(DATES)]
+        curr = CURRENCIES[(i + 4) % len(CURRENCIES)]
+        riders = 45000 + (i * 4000) % 120000
+        pct = PERCENTAGES[(i + 4) % len(PERCENTAGES)]
+        user_text = (
+            f"Delving into civic administration, the {city} transit authority approved its budget on {date}. "
+            f"The municipal council authorized {curr} in bond funding, serving {riders} daily commuters. "
+            f"Systemic upgrades will cut schedule delays by {pct}, creating a transit network that is reliable, accessible, and clean. "
+            f"In conclusion, this marks a cornerstone of civic prosperity."
+        )
+        human_text = (
+            f"The {city} transit board passed its capital plan on {date}. "
+            f"Councilors approved {curr} in bonds to modernize routes carrying {riders} daily passengers. "
+            f"Signal upgrades are expected to reduce delays by {pct} over the coming year."
+        )
+        procedural.append((user_text, human_text))
+
+    # 19. Pharmaceutical Chemistry & Bioavailability Assays
+    for i in range(target_per_template):
+        comp = COMPANIES[(i + 13) % len(COMPANIES)]
+        exec_name = EXECUTIVES[(i + 11) % len(EXECUTIVES)]
+        date = DATES[(i + 18) % len(DATES)]
+        hours = 12 + (i % 18)
+        pct_bio = 68 + (i * 2) % 24
+        mg_wt = 320 + (i * 12) % 180
+        user_text = (
+            f"In the biochemical realm, {comp} concluded pharmacokinetic assays on {date}. "
+            f"{exec_name} recorded a compound elimination half-life of {hours} hours with {pct_bio}% oral bioavailability. "
+            f"The molecular formulation with molecular weight {mg_wt} g/mol is meticulous, safe, and effective. "
+            f"Ultimately, this paves the way for a revolutionary therapeutic breakthrough."
+        )
+        human_text = (
+            f"On {date}, {comp} released pharmacokinetic results for its lead compound. "
+            f"{exec_name} reported an elimination half-life of {hours} hours alongside {pct_bio}% oral bioavailability. "
+            f"The candidate molecule sits at {mg_wt} g/mol molecular weight and will enter toxicology screens next month."
+        )
+        procedural.append((user_text, human_text))
+
+    # 20. Hardware Thermal & Durability Stress Testing
+    for i in range(target_per_template):
+        comp = COMPANIES[(i + 14) % len(COMPANIES)]
+        date = DATES[(i + 19) % len(DATES)]
+        temp = 42 + (i % 14)
+        hours = 14 + (i % 12)
+        pct = "0.2%" if i % 2 == 0 else "0.4%"
+        user_text = (
+            f"Delving into consumer hardware, {comp} completed thermal reliability testing on {date}. "
+            f"Under continuous load, casing temperatures did not exceed {temp}°C during {hours} hours of playback. "
+            f"Longitudinal chassis stress tests revealed a failure rate of just {pct}. "
+            f"In summary, this stands as a testament to sleek, durable, and intuitive engineering."
+        )
+        human_text = (
+            f"{comp} finalized thermal validation for its new device on {date}. "
+            f"Internal temperatures capped out at {temp}°C across {hours} hours of heavy stress testing. "
+            f"Hardware failure rates measured just {pct} across the initial batch of sample units."
+        )
+        procedural.append((user_text, human_text))
+
+    # 21. Fintech Credit Underwriting & Risk Models
+    for i in range(target_per_template):
+        comp = COMPANIES[(i + 15) % len(COMPANIES)]
+        date = DATES[(i + 20) % len(DATES)]
+        curr = CURRENCIES[(i + 6) % len(CURRENCIES)]
+        fico = 690 + (i * 5) % 65
+        pct = "1.4%" if i % 2 == 0 else "1.8%"
+        user_text = (
+            f"In the modern fintech landscape, {comp} disbursed {curr} in small business credit during {date}. "
+            f"Borrower underwriting maintained an average FICO score of {fico}, keeping defaults under {pct}. "
+            f"It is not merely a lending platform, but a vital catalyst for economic empowerment. "
+            f"In conclusion, this showcases a transformative financial paradigm."
+        )
+        human_text = (
+            f"{comp} underwrote {curr} in small business loans on {date}. "
+            f"Approved borrowers held an average credit score of {fico}, with non-performing loans holding steady at {pct}. "
+            f"Origination speeds averaged under 4 minutes per applicant."
+        )
+        procedural.append((user_text, human_text))
+
+    # 22. Commercial Aviation Fleet Reliability
+    for i in range(target_per_template):
+        comp = COMPANIES[(i + 16) % len(COMPANIES)]
+        date = DATES[(i + 21) % len(DATES)]
+        planes = 45 + (i * 3) % 40
+        pct_ontime = 84 + (i * 2) % 12
+        pct_fuel = "4.2%" if i % 2 == 0 else "5.1%"
+        user_text = (
+            f"Delving into commercial aviation, {comp} audited maintenance operations on {date}. "
+            f"Across a fleet of {planes} aircraft, on-time departures reached {pct_ontime}%. "
+            f"Engine route optimization reduced kerosene burn by {pct_fuel}, ensuring flights are safe, efficient, and punctual. "
+            f"Overall, this elevates airline operations to an unprecedented pinnacle."
+        )
+        human_text = (
+            f"Maintenance audits for {comp} wrapped up on {date}. "
+            f"Across {planes} active passenger planes, on-time departures hit {pct_ontime}%. "
+            f"New flight-path adjustments trimmed fuel consumption by {pct_fuel} across long-haul legs."
+        )
+        procedural.append((user_text, human_text))
+
+    # 23. AgTech Precision Farming & Water Conservation
+    for i in range(target_per_template):
+        comp = COMPANIES[(i + 17) % len(COMPANIES)]
+        date = DATES[(i + 22) % len(DATES)]
+        acres = 8000 + (i * 1200) % 25000
+        sensors = 240 + (i * 30) % 500
+        pct = PERCENTAGES[(i + 8) % len(PERCENTAGES)]
+        user_text = (
+            f"In the agricultural tech landscape, {comp} deployed smart irrigation on {date}. "
+            f"Covering {acres} acres with {sensors} telemetry probes, water withdrawal fell by {pct}. "
+            f"From humble family farms to vast corporate agribusinesses, this fosters resilience, stewardship, and bounty. "
+            f"In summary, it illuminates a sustainable beacon in precision farming."
+        )
+        human_text = (
+            f"{comp} switched on its moisture-sensor network on {date}. "
+            f"The rollout covers {acres} acres using {sensors} soil monitors, cutting irrigation water draw by {pct}. "
+            f"Soil salinity readings remained stable throughout initial planting cycles."
+        )
+        procedural.append((user_text, human_text))
+
+    # 24. Telecom 5G Infrastructure & Gigabit Expansion
+    for i in range(target_per_template):
+        comp = COMPANIES[(i + 18) % len(COMPANIES)]
+        date = DATES[(i + 23) % len(DATES)]
+        towers = 650 + (i * 85) % 1800
+        pct = 91 + (i % 8)
+        curr = CURRENCIES[(i + 5) % len(CURRENCIES)]
+        user_text = (
+            f"Delving into telecommunications, {comp} expanded high-speed infrastructure on {date}. "
+            f"Activating {towers} base towers, outdoor coverage touched {pct}% across metro corridors. "
+            f"Capital expenditure did not exceed {curr}, connecting users in a way that is seamless, blazing-fast, and ubiquitous. "
+            f"In conclusion, this spearheads a revolutionary digital highway."
+        )
+        human_text = (
+            f"On {date}, {comp} brought {towers} new cellular towers online. "
+            f"Outdoor coverage reached {pct}% across the metropolitan zone, keeping capital spending under {curr}. "
+            f"Average subscriber download speeds measured 380 Mbps during evening peak hours."
+        )
+        procedural.append((user_text, human_text))
+
     return procedural
+
 
 def generate_massive_dataset():
     all_pairs = list(SEED_SAMPLES)
-    procedural_pairs = generate_procedural_samples(target_count=650)
+    # Generate 155 per each of the 24 templates = 3,720 procedural pairs + 80 seed = 3,800 pairs
+    procedural_pairs = generate_procedural_samples(target_per_template=155)
     all_pairs.extend(procedural_pairs)
-    
+
     # Shuffle deterministically
     random.seed(42)
     random.shuffle(all_pairs)
-    
+
     # Validate each sample against FactGuard invariants
     valid_dataset = []
     skipped = 0
     for user_text, human_text in all_pairs:
         u_ledger = extract_fact_ledger(user_text)
         h_ledger = extract_fact_ledger(human_text)
-        
-        # Verify numbers & dates
-        missing_nums = [n for n in u_ledger.numbers if n not in human_text]
-        missing_dates = [d for d in u_ledger.dates if d not in human_text]
-        
+
+        # Verify that all user numbers and dates are strictly preserved in human_text
+        missing_nums = [n for n in u_ledger.numbers if n.lower() not in human_text.lower()]
+        missing_dates = [d for d in u_ledger.dates if d.lower() not in human_text.lower()]
+
         if not missing_nums and not missing_dates:
             valid_dataset.append(make_sample(user_text, human_text))
         else:
             skipped += 1
-            
+
     output_path = Path(__file__).parent / "expanded_training_data_14b.jsonl"
     with open(output_path, "w", encoding="utf-8") as f:
         for item in valid_dataset:
             f.write(json.dumps(item, ensure_ascii=False) + "\n")
-            
+
     print("=" * 60)
     print(" MASSIVE DATASET GENERATION COMPLETE")
     print("=" * 60)
@@ -318,6 +716,7 @@ def generate_massive_dataset():
     print(f"Output File: {output_path}")
     print(f"File Size: {output_path.stat().st_size / 1024:.1f} KB")
     print("=" * 60)
+
 
 if __name__ == "__main__":
     generate_massive_dataset()

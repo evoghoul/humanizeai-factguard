@@ -146,25 +146,65 @@ def factguard_check(original: str, rewritten: str) -> dict:
     print("Created factguard.py")
 
     # 3. Training Script
-    train_code = '''import os, torch
-from datasets import load_dataset
-from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
-from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
-from trl import SFTTrainer
+    train_code = '''import os
+import sys
+from typing import Any
+
+try:
+    import torch  # type: ignore
+    from datasets import load_dataset  # type: ignore
+    from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig  # type: ignore
+    from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training  # type: ignore
+    from trl import SFTTrainer  # type: ignore
+    TORCH_AVAILABLE = True
+except ImportError:
+    torch: Any = None  # type: ignore
+    load_dataset: Any = None  # type: ignore
+    AutoModelForCausalLM: Any = None  # type: ignore
+    AutoTokenizer: Any = None  # type: ignore
+    BitsAndBytesConfig: Any = None  # type: ignore
+    LoraConfig: Any = None  # type: ignore
+    get_peft_model: Any = None  # type: ignore
+    prepare_model_for_kbit_training: Any = None  # type: ignore
+    SFTTrainer: Any = None  # type: ignore
+    TORCH_AVAILABLE = False
 
 MODEL_ID = "Qwen/Qwen2.5-14B-Instruct"
-DATASET_FILE = "expanded_training_data_14b.jsonl"
 OUTPUT_DIR = "humanizeai_14b_lora"
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+DATASET_FILE = os.path.join(SCRIPT_DIR, "expanded_training_data_14b.jsonl")
+if not os.path.exists(DATASET_FILE):
+    DATASET_FILE = "expanded_training_data_14b.jsonl"
+
+def check_environment() -> bool:
+    if not TORCH_AVAILABLE or torch is None or not torch.cuda.is_available():
+        print("=" * 65)
+        print(">> NOTICE: GPU TRAINING LIBRARIES NOT DETECTED LOCALLY <<")
+        print("PyTorch and CUDA packages are not installed or no GPU found.")
+        print("Please run this command on Lightning AI Studio.")
+        print("=" * 65)
+        return False
+    return True
 
 def main():
     print("==================================================")
-    print("Starting Qwen2.5-14B-Instruct Fine-Tuning on GPU")
+    print(" HumanizeAI + FactGuard 14B Fine-Tuning Pipeline")
+    print(" Base Model: Qwen/Qwen2.5-14B-Instruct")
     print("==================================================")
     
+    if not check_environment():
+        return
+        
+    use_bf16 = False
+    try:
+        use_bf16 = bool(torch.cuda.is_bf16_supported())
+    except Exception:
+        use_bf16 = False
+        
     bnb_config = BitsAndBytesConfig(
         load_in_4bit=True,
         bnb_4bit_quant_type="nf4",
-        bnb_4bit_compute_dtype=torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float16,
+        bnb_4bit_compute_dtype=torch.bfloat16 if use_bf16 else torch.float16,
         bnb_4bit_use_double_quant=True
     )
     
@@ -181,8 +221,9 @@ def main():
         trust_remote_code=True
     )
     
-    model = prepare_model_for_kbit_training(model)
-    model.gradient_checkpointing_enable()
+    model = prepare_model_for_kbit_training(model, use_gradient_checkpointing=True)
+    if hasattr(model, "enable_input_require_grads"):
+        model.enable_input_require_grads()
     
     lora_config = LoraConfig(
         r=16,
@@ -198,6 +239,7 @@ def main():
     
     print(f"Loading training data from {DATASET_FILE}...")
     dataset = load_dataset("json", data_files={"train": DATASET_FILE}, split="train")
+    print(f"Loaded {len(dataset)} FactGuard-validated training samples.")
     
     def format_chat(batch):
         texts = []
@@ -207,6 +249,8 @@ def main():
         return {"text": texts}
         
     formatted_dataset = dataset.map(format_chat, batched=True)
+    num_epochs = int(os.environ.get("EPOCHS", "3"))
+    print(f"Training for {num_epochs} epochs (~{num_epochs * 2.3:.1f} hours on L4 GPU)...")
     
     trainer = None
     try:
@@ -218,10 +262,16 @@ def main():
             per_device_train_batch_size=1,
             gradient_accumulation_steps=4,
             learning_rate=2e-4,
-            num_train_epochs=3,
-            logging_steps=2,
+            num_train_epochs=num_epochs,
+            logging_steps=25,
+            save_strategy="epoch",
+            save_total_limit=2,
+            warmup_ratio=0.03,
+            weight_decay=0.01,
+            gradient_checkpointing=True,
+            gradient_checkpointing_kwargs={"use_reentrant": False},
             optim="paged_adamw_8bit",
-            bf16=torch.cuda.is_bf16_supported(),
+            bf16=use_bf16,
             report_to="none"
         )
         trainer = SFTTrainer(
@@ -244,10 +294,16 @@ def main():
             per_device_train_batch_size=1,
             gradient_accumulation_steps=4,
             learning_rate=2e-4,
-            num_train_epochs=3,
-            logging_steps=2,
+            num_train_epochs=num_epochs,
+            logging_steps=25,
+            save_strategy="epoch",
+            save_total_limit=2,
+            warmup_ratio=0.03,
+            weight_decay=0.01,
+            gradient_checkpointing=True,
+            gradient_checkpointing_kwargs={"use_reentrant": False},
             optim="paged_adamw_8bit",
-            bf16=torch.cuda.is_bf16_supported(),
+            bf16=use_bf16,
             report_to="none"
         )
         trainer = Trainer(
@@ -258,10 +314,18 @@ def main():
         )
         print("Initialized training with standard transformers.Trainer successfully.")
     
-    print("Fine-tuning in progress...")
+    print("\\n==================================================")
+    print(" Overnight Fine-Tuning in Progress...")
+    print(" Checkpoints will be saved after each epoch to:", OUTPUT_DIR)
+    print("==================================================\\n")
+    
     trainer.train()
     
     print(f"Saving fine-tuned adapter to {OUTPUT_DIR}...")
+    try:
+        trainer.save_model(OUTPUT_DIR)
+    except Exception:
+        pass
     model.save_pretrained(OUTPUT_DIR)
     tokenizer.save_pretrained(OUTPUT_DIR)
     print(">>> 14B Fine-Tuning Completed Successfully! <<<")
