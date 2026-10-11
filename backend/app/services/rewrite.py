@@ -43,7 +43,11 @@ class LightningProvider(ModelProviderInterface):
                 response = client.post(
                     target_url,
                     json={"text": text},
-                    headers={"Content-Type": "application/json"}
+                    headers={
+                        "Content-Type": "application/json",
+                        "ngrok-skip-browser-warning": "true",
+                        "User-Agent": "HumanizeAI/1.0"
+                    }
                 )
                 if response.status_code == 200:
                     data = response.json()
