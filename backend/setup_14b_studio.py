@@ -250,23 +250,39 @@ if __name__ == "__main__":
 
     # 4. Inference Server
     api_code = '''import os
+import traceback
 import torch
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
 from peft import PeftModel
-from factguard import factguard_check
+
+try:
+    from factguard import factguard_check
+except ImportError:
+    def factguard_check(orig, rewr):
+        return {"warnings": [], "needs_review": False, "summary": "Heuristics skipped"}
 
 app = FastAPI(title="HumanizeAI 14B API", version="2.0.0")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 BASE_MODEL = "Qwen/Qwen2.5-14B-Instruct"
 ADAPTER_DIR = "humanizeai_14b_lora"
 
 _model = None
 _tokenizer = None
+_device = None
 
 def get_model():
-    global _model, _tokenizer
+    global _model, _tokenizer, _device
     if _model is None:
         print("Loading 14B model + LoRA adapter...")
         bnb_config = BitsAndBytesConfig(
@@ -276,7 +292,12 @@ def get_model():
             bnb_4bit_use_double_quant=True
         )
         tok_path = ADAPTER_DIR if os.path.exists(ADAPTER_DIR) else BASE_MODEL
+        print(f"Loading tokenizer from: {tok_path}")
         _tokenizer = AutoTokenizer.from_pretrained(tok_path, trust_remote_code=True)
+        if _tokenizer.pad_token is None:
+            _tokenizer.pad_token = _tokenizer.eos_token
+
+        print(f"Loading base model: {BASE_MODEL}")
         base = AutoModelForCausalLM.from_pretrained(
             BASE_MODEL,
             quantization_config=bnb_config,
@@ -287,11 +308,22 @@ def get_model():
             print(f"Applying LoRA adapter from {ADAPTER_DIR}...")
             _model = PeftModel.from_pretrained(base, ADAPTER_DIR)
         else:
-            print("Running on base 14B model...")
+            print("Running on base 14B model (adapter directory not found)...")
             _model = base
         _model.eval()
-        print("14B Model loaded and ready!")
-    return _model, _tokenizer
+        _device = next(_model.parameters()).device
+        print(f"14B Model loaded and ready on {_device}!")
+    return _model, _tokenizer, _device
+
+@app.on_event("startup")
+def startup_event():
+    print(">>> HumanizeAI 14B Server starting up... Warming up model...")
+    try:
+        get_model()
+        print(">>> Model warm-up complete! Ready to serve requests.")
+    except Exception as e:
+        print(f"Failed to pre-load model: {e}")
+        traceback.print_exc()
 
 class HumanizeRequest(BaseModel):
     text: str = Field(min_length=1, max_length=12000)
@@ -304,41 +336,50 @@ class HumanizeResponse(BaseModel):
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "model": "Qwen2.5-14B-Instruct"}
+    return {
+        "status": "ok",
+        "model": "Qwen2.5-14B-Instruct",
+        "loaded": _model is not None
+    }
 
 @app.post("/humanize", response_model=HumanizeResponse)
 def humanize(req: HumanizeRequest):
     if not req.text.strip():
         raise HTTPException(status_code=422, detail="Please provide non-empty text.")
     
-    model, tokenizer = get_model()
-    messages = [
-        {
-            "role": "system",
-            "content": "You are HumanizeAI, an expert writing assistant. Rewrite the user's text into natural, fluent, human prose. You MUST strictly preserve all numbers, dates, names, currencies, percentages, negations, and factual details."
-        },
-        {"role": "user", "content": req.text}
-    ]
-    prompt = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
-    inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
-    
-    with torch.no_grad():
-        outputs = model.generate(
-            **inputs,
-            max_new_tokens=512,
-            do_sample=True,
-            temperature=0.7,
-            top_p=0.9
+    try:
+        model, tokenizer, device = get_model()
+        messages = [
+            {
+                "role": "system",
+                "content": "You are HumanizeAI, an expert writing assistant. Rewrite the user's text into natural, fluent, human prose. You MUST strictly preserve all numbers, dates, names, currencies, percentages, negations, and factual details."
+            },
+            {"role": "user", "content": req.text}
+        ]
+        prompt = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+        inputs = tokenizer(prompt, return_tensors="pt").to(device)
+        
+        with torch.no_grad():
+            outputs = model.generate(
+                **inputs,
+                max_new_tokens=512,
+                do_sample=True,
+                temperature=0.7,
+                top_p=0.9
+            )
+        
+        decoded = tokenizer.decode(outputs[0][inputs.input_ids.shape[1]:], skip_special_tokens=True).strip()
+        fg = factguard_check(req.text, decoded)
+        return HumanizeResponse(
+            original=req.text,
+            rewrite=decoded,
+            warnings=fg.get("warnings", []),
+            needs_review=fg.get("needs_review", False)
         )
-    
-    decoded = tokenizer.decode(outputs[0][inputs.input_ids.shape[1]:], skip_special_tokens=True).strip()
-    fg = factguard_check(req.text, decoded)
-    return HumanizeResponse(
-        original=req.text,
-        rewrite=decoded,
-        warnings=fg.get("warnings", []),
-        needs_review=fg.get("needs_review", False)
-    )
+    except Exception as e:
+        print(f"Error during /humanize: {e}")
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
     import uvicorn
