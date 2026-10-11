@@ -1,11 +1,16 @@
 import os
+import re
 import traceback
-import torch
+try:
+    import torch  # type: ignore
+    from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig  # type: ignore
+    from peft import PeftModel  # type: ignore
+except ImportError:
+    pass
+
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
-from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
-from peft import PeftModel
 
 try:
     from factguard import factguard_check
@@ -94,8 +99,6 @@ def health():
         "model": "Qwen2.5-14B-Instruct",
         "loaded": _model is not None
     }
-
-import re
 
 SYSTEM_INSTRUCTION = (
     "You are HumanizeAI, an expert human editor. Rewrite the input text into natural, fluent, human prose "

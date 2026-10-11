@@ -275,6 +275,7 @@ if __name__ == "__main__":
 
     # 4. Inference Server
     api_code = '''import os
+import re
 import traceback
 import torch
 from fastapi import FastAPI, HTTPException
@@ -371,6 +372,35 @@ def health():
         "loaded": _model is not None
     }
 
+SYSTEM_INSTRUCTION = (
+    "You are HumanizeAI, an expert human editor. Rewrite the input text into natural, fluent, human prose "
+    "that reads genuinely human and passes all AI detectors (high perplexity and high burstiness).\\n\\n"
+    "CRITICAL GUIDELINES:\\n"
+    "1. FACTGUARD INVARIANTS: Strictly preserve all numbers, dates, years, currencies ($/€/£), percentages (%), proper names, and negative conditions (not, never, cannot). Never drop or alter any fact.\\n"
+    "2. BURSTINESS & RHYTHM: Vary sentence lengths dramatically. Mix short 4-word punchy sentences with longer compound thoughts (18-24 words).\\n"
+    "3. BAN AI CLICHÉS: Strictly avoid delve, testament, tapestry, pivotal, beacon, crucial, foster, spearhead, furthermore, moreover, in conclusion, realm, landscape, game-changer, seamless, paramount, multifaceted, vibrant.\\n"
+    "4. NO MERE SYNONYM SWAPPING: Do NOT simply replace words with synonyms in the same sentence order. Completely rethink the rhythm and structure like a real human writer.\\n"
+    "5. STRENGTH SCALING:\\n"
+    "   - light: Clean up robotic transitions and stiff phrasing while keeping original structure intact.\\n"
+    "   - medium: Reorganize sentence order, introduce natural contractions, and mix sentence lengths.\\n"
+    "   - heavy / high: Boldly reshape the prose from scratch with fresh human voice, punchy hooks, and dynamic flow.\\n"
+    "6. FORMAT: Output ONLY the rewritten text. Absolutely NO conversational preambles (e.g., 'Sure!', 'Here is...'), NO quotes, and NO explanations."
+)
+
+def strip_preamble(text: str) -> str:
+    cleaned = text.strip()
+    cleaned = re.sub(r"^```[a-zA-Z]*\\n([\\s\\S]*?)\\n```$", r"\\1", cleaned)
+    cleaned = re.sub(
+        r"^(Here(?:'s|\\s+is)\\s+(?:a|the|your)?\\s*(?:casual|natural|professional|humanized|rewritten)?\\s*(?:take|version|rewrite|draft)?[:\\-\\n]+|"
+        r"Sure(?:!|,|\\.)?\\s*(?:Here(?:'s|\\s+is)[^:\\n]*[:\\-\\n]+)?|"
+        r"Certainly(?:!|,|\\.)?\\s*(?:Here(?:'s|\\s+is)[^:\\n]*[:\\-\\n]+)?|"
+        r"Of course(?:!|,|\\.)?\\s*(?:Here(?:'s|\\s+is)[^:\\n]*[:\\-\\n]+)?)\\s*",
+        "",
+        cleaned,
+        flags=re.IGNORECASE
+    )
+    return cleaned.strip()
+
 @app.post("/humanize", response_model=HumanizeResponse)
 def humanize(req: HumanizeRequest):
     if not req.text.strip():
@@ -378,36 +408,56 @@ def humanize(req: HumanizeRequest):
     
     try:
         model, tokenizer, device = get_model()
+        word_count = len(req.text.split())
+        dynamic_max_tokens = min(512, max(64, int(word_count * 2.2)))
+
         messages = [
+            {"role": "system", "content": SYSTEM_INSTRUCTION},
             {
-                "role": "system",
-                "content": (
-                    "You are HumanizeAI, an expert human editor. Rewrite the input text into natural, fluent, human prose "
-                    "that reads genuinely human and passes all AI detectors (high perplexity and high burstiness).\n\n"
-                    "RULES:\n"
-                    "1. FACTGUARD INVARIANTS: Strictly preserve all numbers, dates, years, currencies ($/€/£), percentages (%), names, and negative conditions (not, never, cannot). Never drop or modify any fact.\n"
-                    "2. HIGH BURSTINESS: Vary your sentence lengths dramatically. Mix short 4-word punchy sentences with longer compound thoughts (18-24 words).\n"
-                    "3. BAN AI CLICHÉS: Strictly avoid delve, testament, tapestry, pivotal, beacon, crucial, foster, spearhead, furthermore, moreover, in conclusion, realm, landscape, game-changer, seamless, paramount.\n"
-                    "4. NATURAL CADENCE: Use active voice, natural contractions (it's, won't, didn't, we've), and conversational flow.\n"
-                    "5. Output ONLY the rewritten text without preambles or notes."
-                )
+                "role": "user",
+                "content": "Tone: Conversational\\nStrength: Heavy\\n\\nOriginal Text:\\nArtificial intelligence has transformed the modern business landscape in profound ways. Companies worldwide are leveraging machine learning to enhance operational efficiency and foster innovation. It is important to note that organizations must adopt strategic frameworks to navigate these technological changes seamlessly and remain competitive in today's digital era."
             },
-            {"role": "user", "content": f"Tone: {req.tone}\nStrength: {req.strength}\n\nText to rewrite:\n{req.text}"}
+            {
+                "role": "assistant",
+                "content": "AI has completely upended the modern workplace—and it happened fast. Teams everywhere are leaning on machine learning to speed up clunky workflows and spark fresh ideas. But here's the catch: without a practical game plan, jumping headfirst into these tools usually causes more headaches than breakthroughs. In other words, you need a strategy, not just shiny software."
+            },
+            {
+                "role": "user",
+                "content": "Tone: Professional\\nStrength: Medium\\n\\nOriginal Text:\\nThe quarterly financial report demonstrates significant revenue growth of 18.5% reaching $4.2 million on September 30, 2025. However, leadership must remain vigilant regarding market volatility."
+            },
+            {
+                "role": "assistant",
+                "content": "By September 30, 2025, revenue jumped 18.5% to hit $4.2 million. Solid numbers. Even so, leadership can't afford to get comfortable—market swings are still a very real threat."
+            },
+            {
+                "role": "user",
+                "content": f"Tone: {req.tone}\\nStrength: {req.strength}\\n\\nOriginal Text:\\n{req.text}"
+            }
         ]
         prompt = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
         inputs = tokenizer(prompt, return_tensors="pt").to(device)
         
+        eos_ids = [tokenizer.eos_token_id]
+        if hasattr(tokenizer, "convert_tokens_to_ids"):
+            im_end_id = tokenizer.convert_tokens_to_ids("<|im_end|>")
+            if im_end_id and im_end_id not in eos_ids:
+                eos_ids.append(im_end_id)
+        
         with torch.no_grad():
             outputs = model.generate(
                 **inputs,
-                max_new_tokens=512,
+                max_new_tokens=dynamic_max_tokens,
                 do_sample=True,
-                temperature=0.85,
-                top_p=0.92,
-                repetition_penalty=1.15
+                temperature=0.9,
+                top_p=0.95,
+                repetition_penalty=1.15,
+                eos_token_id=eos_ids,
+                use_cache=True,
+                pad_token_id=tokenizer.pad_token_id or tokenizer.eos_token_id
             )
         
-        decoded = tokenizer.decode(outputs[0][inputs.input_ids.shape[1]:], skip_special_tokens=True).strip()
+        raw_decoded = tokenizer.decode(outputs[0][inputs.input_ids.shape[1]:], skip_special_tokens=True).strip()
+        decoded = strip_preamble(raw_decoded)
         fg = factguard_check(req.text, decoded)
         return HumanizeResponse(
             original=req.text,
