@@ -289,7 +289,8 @@ def get_model():
             load_in_4bit=True,
             bnb_4bit_quant_type="nf4",
             bnb_4bit_compute_dtype=torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float16,
-            bnb_4bit_use_double_quant=True
+            bnb_4bit_use_double_quant=True,
+            llm_int8_enable_fp32_cpu_offload=True
         )
         tok_path = ADAPTER_DIR if os.path.exists(ADAPTER_DIR) else BASE_MODEL
         print(f"Loading tokenizer from: {tok_path}")
@@ -298,10 +299,11 @@ def get_model():
             _tokenizer.pad_token = _tokenizer.eos_token
 
         print(f"Loading base model: {BASE_MODEL}")
+        device_map = {"": 0} if torch.cuda.is_available() else "auto"
         base = AutoModelForCausalLM.from_pretrained(
             BASE_MODEL,
             quantization_config=bnb_config,
-            device_map="auto",
+            device_map=device_map,
             trust_remote_code=True
         )
         if os.path.exists(ADAPTER_DIR):
@@ -311,7 +313,7 @@ def get_model():
             print("Running on base 14B model (adapter directory not found)...")
             _model = base
         _model.eval()
-        _device = next(_model.parameters()).device
+        _device = "cuda:0" if torch.cuda.is_available() else "cpu"
         print(f"14B Model loaded and ready on {_device}!")
     return _model, _tokenizer, _device
 
