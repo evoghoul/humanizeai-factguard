@@ -125,6 +125,25 @@ CRITICAL RULES:
 4. NATURAL CADENCE: Use active voice, natural contractions (it's, won't, didn't, we've), and conversational flow appropriate for the requested tone.
 5. Return ONLY the rewritten text without markdown conversational preambles or explanations."""
 
+def clean_model_output(text: str) -> str:
+    """Strip any conversational preambles like 'Sure! Here is...' from LLM output."""
+    if not text:
+        return ""
+    cleaned = text.strip()
+    # Strip markdown code fences if model wrapped response in ```
+    cleaned = re.sub(r"^```[a-zA-Z]*\n([\s\S]*?)\n```$", r"\1", cleaned)
+    # Strip common conversational preambles
+    cleaned = re.sub(
+        r"^(Here(?:'s|\s+is)\s+(?:a|the|your)?\s*(?:casual|natural|professional|humanized|rewritten)?\s*(?:take|version|rewrite|draft)?[:\-\n]+|"
+        r"Sure(?:!|,|\.)?\s*(?:Here(?:'s|\s+is)[^:\n]*[:\-\n]+)?|"
+        r"Certainly(?:!|,|\.)?\s*(?:Here(?:'s|\s+is)[^:\n]*[:\-\n]+)?|"
+        r"Of course(?:!|,|\.)?\s*(?:Here(?:'s|\s+is)[^:\n]*[:\-\n]+)?)\s*",
+        "",
+        cleaned,
+        flags=re.IGNORECASE
+    )
+    return cleaned.strip()
+
 class GeminiProvider(ModelProviderInterface):
     """
     Google Gemini 2.5 Flash / 1.5 Flash cloud provider.
@@ -160,7 +179,7 @@ class GeminiProvider(ModelProviderInterface):
                     if candidates:
                         parts = candidates[0].get("content", {}).get("parts", [])
                         if parts:
-                            return parts[0].get("text", "").strip()
+                            return clean_model_output(parts[0].get("text", "").strip())
         except Exception:
             pass
         return HeuristicHumanizer().rewrite(text, tone, strength)
@@ -195,7 +214,8 @@ class LightningProvider(ModelProviderInterface):
                 )
                 if response.status_code == 200:
                     data = response.json()
-                    return data.get("rewrite") or data.get("revised") or text
+                    raw = data.get("rewrite") or data.get("revised") or text
+                    return clean_model_output(raw)
                 else:
                     return self._fallback(text, tone, strength)
         except Exception:
@@ -215,7 +235,7 @@ def get_provider():
         return GeminiProvider()
     return HeuristicHumanizer()
 
-def perform_humanize(text: str, tone: str, strength: str, max_retries: int = 1):
+def perform_humanize(text: str, tone: str, strength: str, max_retries: int = 0):
     provider = get_provider()
     
     original_text = text
