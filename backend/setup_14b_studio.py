@@ -252,28 +252,50 @@ def main():
     num_epochs = int(os.environ.get("EPOCHS", "3"))
     print(f"Training for {num_epochs} epochs (~{num_epochs * 2.3:.1f} hours on L4 GPU)...")
     
+    import re
+
+    def build_args(cls, **kwargs):
+        current = dict(kwargs)
+        while True:
+            try:
+                return cls(**current)
+            except TypeError as err:
+                match = re.search(r"unexpected keyword argument ['\"]([^'\"]+)['\"]", str(err))
+                if match and match.group(1) in current:
+                    dropped = match.group(1)
+                    print(f">> Notice: '{dropped}' not supported by {cls.__name__}, auto-pruning and retrying...")
+                    current.pop(dropped)
+                else:
+                    raise err
+
     trainer = None
     try:
         from trl import SFTTrainer, SFTConfig
-        args = SFTConfig(
-            output_dir=OUTPUT_DIR,
-            dataset_text_field="text",
-            max_length=1024,
-            per_device_train_batch_size=1,
-            gradient_accumulation_steps=4,
-            learning_rate=2e-4,
-            num_train_epochs=num_epochs,
-            logging_steps=25,
-            save_strategy="epoch",
-            save_total_limit=2,
-            warmup_ratio=0.03,
-            weight_decay=0.01,
-            gradient_checkpointing=True,
-            gradient_checkpointing_kwargs={"use_reentrant": False},
-            optim="paged_adamw_8bit",
-            bf16=use_bf16,
-            report_to="none"
-        )
+        base_sft_kwargs = {
+            "output_dir": OUTPUT_DIR,
+            "dataset_text_field": "text",
+            "max_length": 1024,
+            "per_device_train_batch_size": 1,
+            "gradient_accumulation_steps": 4,
+            "learning_rate": 2e-4,
+            "num_train_epochs": num_epochs,
+            "logging_steps": 25,
+            "save_strategy": "epoch",
+            "save_total_limit": 2,
+            "weight_decay": 0.01,
+            "gradient_checkpointing": True,
+            "gradient_checkpointing_kwargs": {"use_reentrant": False},
+            "optim": "paged_adamw_8bit",
+            "bf16": use_bf16,
+            "report_to": "none"
+        }
+        try:
+            args = build_args(SFTConfig, **base_sft_kwargs)
+        except Exception:
+            base_sft_kwargs.pop("max_length", None)
+            base_sft_kwargs["max_seq_length"] = 1024
+            args = build_args(SFTConfig, **base_sft_kwargs)
+
         trainer = SFTTrainer(
             model=model,
             train_dataset=formatted_dataset,
@@ -289,23 +311,23 @@ def main():
             
         tokenized_ds = formatted_dataset.map(tokenize_batch, batched=True, remove_columns=formatted_dataset.column_names)
         
-        args = TrainingArguments(
-            output_dir=OUTPUT_DIR,
-            per_device_train_batch_size=1,
-            gradient_accumulation_steps=4,
-            learning_rate=2e-4,
-            num_train_epochs=num_epochs,
-            logging_steps=25,
-            save_strategy="epoch",
-            save_total_limit=2,
-            warmup_ratio=0.03,
-            weight_decay=0.01,
-            gradient_checkpointing=True,
-            gradient_checkpointing_kwargs={"use_reentrant": False},
-            optim="paged_adamw_8bit",
-            bf16=use_bf16,
-            report_to="none"
-        )
+        trainer_kwargs = {
+            "output_dir": OUTPUT_DIR,
+            "per_device_train_batch_size": 1,
+            "gradient_accumulation_steps": 4,
+            "learning_rate": 2e-4,
+            "num_train_epochs": num_epochs,
+            "logging_steps": 25,
+            "save_strategy": "epoch",
+            "save_total_limit": 2,
+            "weight_decay": 0.01,
+            "gradient_checkpointing": True,
+            "gradient_checkpointing_kwargs": {"use_reentrant": False},
+            "optim": "paged_adamw_8bit",
+            "bf16": use_bf16,
+            "report_to": "none"
+        }
+        args = build_args(TrainingArguments, **trainer_kwargs)
         trainer = Trainer(
             model=model,
             train_dataset=tokenized_ds,
