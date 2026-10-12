@@ -134,7 +134,9 @@ CRITICAL CONTENT INTEGRITY DIRECTIVES:
 2. Preserve ALL conditions, exceptions, limitations, qualifications, and negations (e.g. 'not', 'never', 'cannot').
 3. Keep the original scope, depth, paragraph structure, and bullet points intact.
 4. Do NOT invent new facts, evidence, or citations. Do NOT add unrequested summaries, introductions, or conclusions.
-5. If text is already natural and correct, keep it unchanged.
+5. ZERO N-GRAM PLAGIARISM OVERLAP: Plagiarism checkers flag 4+ consecutive identical words. Aggressively restructure clause order and vocabulary while keeping all facts 100% exact.
+6. NO EM-DASHES (—) OR SEMICOLONS (;): AI models overuse dashes and semicolons. Write with natural periods and commas instead.
+7. If text is already natural and correct, keep it unchanged.
 
 Return valid JSON with format:
 {

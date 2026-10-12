@@ -139,9 +139,17 @@ export async function humanizeText(
 
   for (const targetUrl of uniqueEndpoints) {
     try {
+      const strength =
+        options?.intensity === "Strong"
+          ? "Heavy"
+          : options?.intensity === "Light"
+          ? "Light"
+          : "Medium"
+      const tone = options?.tone || "Professional"
+
       const requestBody = targetUrl.endsWith("/api/refine")
         ? { text: trimmed, options }
-        : { text: trimmed }
+        : { text: trimmed, tone, strength }
 
       const response = await fetch(targetUrl, {
         method: "POST",
