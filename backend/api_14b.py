@@ -184,11 +184,15 @@ def humanize(req: HumanizeRequest):
 
         strength_val = (req.strength or "Medium").strip().lower()
         if strength_val == "heavy":
-            gen_temp = 1.18
+            gen_temp = 1.04
             gen_top_p = 0.92
             gen_top_k = 50
-            gen_rep_pen = 1.22
-            strength_instruction = "Strength: Heavy (Aggressive structural overhaul, 0% verbatim n-gram overlap, extreme sentence length variation, zero dashes, zero semicolons)"
+            gen_rep_pen = 1.15
+            strength_instruction = (
+                "Strength: Heavy (Aggressive structural overhaul, 0% verbatim n-gram overlap, "
+                "extreme sentence length variation, zero dashes, zero semicolons, "
+                "CRITICAL: preserve 100% of exact numbers, dates, and percentages without rounding)"
+            )
         elif strength_val == "light":
             gen_temp = 0.85
             gen_top_p = 0.95
