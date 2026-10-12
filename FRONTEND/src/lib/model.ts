@@ -110,7 +110,7 @@ export function writeLocal(key: string, value: unknown) {
 export function entities(text: string): string[] {
   const matches =
     text.match(
-      /[\w.+-]+@[\w.-]+\.[a-z]{2,}|\b(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2}(?:,\s*\d{4})?|\b\d{4}-\d{2}-\d{2}\b|\b\d{1,2}\/\d{1,2}\/\d{2,4}\b|(?:\$|€|£|¥)?\b\d+(?:[.,:/-]\d+)*(?:%|°[CF]|\s*(?:AM|PM|kg|lbs|mph|km\/h|ms|px|GB|MB|KB|GHz|MHz|USD|EUR|GBP|INR)\b)?|\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+)+\b|\[\d+\]|\([A-Z][a-z]+(?:\s+et\s+al\.)?,\s*\d{4}\)/g,
+      /[\w.+-]+@[\w.-]+\.[a-z]{2,}|\b(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2}(?:,\s*\d{4})?|\b\d{4}-\d{2}-\d{2}\b|\b\d{1,2}\/\d{1,2}\/\d{2,4}\b|(?:\$|€|£|¥)?\b\d+(?:[.,:/-]\d+)*(?:%|°[CF]|\s*(?:AM|PM|daily|weekly|monthly|kg|lbs|mph|km\/h|ms|px|GB|MB|KB|GHz|MHz|USD|EUR|GBP|INR)\b)?|\b(?:two|three|four|five|six|seven|eight|nine|ten|\d+)[-\s]+(?:weeks?|days?|hours?|months?|years?)\b|\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+)+\b|\[\d+\]|\([A-Z][a-z]+(?:\s+et\s+al\.)?,\s*\d{4}\)/gi,
     ) || []
   return [...new Set(matches.map((v) => v.replace(/\s+/g, " ").trim()))]
 }
@@ -127,6 +127,13 @@ export function extractListItems(text: string): string[] {
     .filter((l) => /^[-*•]\s+|^\d+[.)]\s+/.test(l))
 }
 
+export const BANNED_AI_CLICHES = [
+  "rich tapestry", "dynamic synergies", "paradigm shift", "delve into", "delving into",
+  "delve", "multifaceted", "digital landscape", "navigating the landscape",
+  "tapestry", "testament to", "beacon of", "beacon", "foster", "fostering", "spearhead",
+  "spearheading", "game-changer", "pivotal role", "pivotal", "cornerstone", "seamlessly"
+] as const
+
 export function checkStructuralIntegrity(original: string, revised: string): StructuralCheck {
   const origParagraphs = original.split(/\n\s*\n/).filter((p) => p.trim().length > 0)
   const revParagraphs = revised.split(/\n\s*\n/).filter((p) => p.trim().length > 0)
@@ -142,11 +149,24 @@ export function checkStructuralIntegrity(original: string, revised: string): Str
   // Allow slight paragraph flexibility if length is single paragraph, but flag collapse if multiple paragraphs
   const paragraphsPreserved = origParagraphs.length <= 1 || revParagraphs.length >= Math.floor(origParagraphs.length * 0.8)
 
+  const detectedCliches = BANNED_AI_CLICHES.filter((c) =>
+    new RegExp(`\\b${c}\\b`, "i").test(revised)
+  )
+
   const details: string[] = []
-  if (!numbersPreserved) details.push("One or more numerical values or units appear altered or omitted.")
+  if (entityDiff.missing.length > 0) {
+    const missingNamed = entityDiff.missing.filter((v) => !/\d/.test(v))
+    if (missingNamed.length > 0) {
+      details.push(`Named entity retention issue: '${missingNamed.join(", ")}' was omitted or modified.`)
+    }
+  }
+  if (!numbersPreserved) details.push("One or more numerical values, currencies (£/$/€), or units appear altered or omitted.")
   if (!negationsPreserved) details.push("A negative qualification (e.g. 'not', 'never', 'cannot') may have been inverted.")
   if (!listsPreserved) details.push("List items or bulleted points from the original text may have been compressed.")
   if (!paragraphsPreserved) details.push("Paragraph structure was condensed compared to the original.")
+  if (detectedCliches.length > 0) {
+    details.push(`Banned robotic AI cliché detected: ${detectedCliches.join(", ")}.`)
+  }
 
   return {
     paragraphsPreserved,

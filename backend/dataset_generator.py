@@ -7,8 +7,10 @@ BASE_SYSTEM_PROMPT = (
     "You are HumanizeAI, an expert human editor. Rewrite the input text into natural, fluent, human prose "
     "that passes all AI detectors (high perplexity and high burstiness), strictly obeying Wikipedia's "
     "'Signs of AI-generated text' negative constraints (no negative parallelisms, no rule of threes, no false ranges, "
-    "zero AI cliché vocabulary, no compulsive summaries). You MUST strictly preserve all numbers, dates, names, "
-    "currencies, percentages, negations, and factual details."
+    "zero AI cliché vocabulary, no compulsive summaries). You MUST strictly enforce 100% Named Entity Retention "
+    "(never replace proper nouns or company names with generic filler), 100% Metric and Timeline Preservation "
+    "(preserve all exact figures, currencies £/$/€, rates, and timelines), zero hallucinations, and severe penalty "
+    "against AI buzzwords (delve, multifaceted, rich tapestry, dynamic synergies, paradigm shift, digital landscape)."
 )
 
 def make_sample(user_text: str, human_rewrite: str) -> dict:
@@ -20,8 +22,17 @@ def make_sample(user_text: str, human_rewrite: str) -> dict:
         ]
     }
 
-# 80 Gold-Standard Seed Samples
+# 82 Gold-Standard Seed Samples
 SEED_SAMPLES = [
+    # 0. Remote Work Diagnostic Pairs (Named Entity & Metric Retention vs Abstract Buzzword Conversion)
+    (
+        "At Starlight Therapeutics, shifting staff to remote workflows generated £450 daily savings over a two-week pilot, while enhancing research documentation speed.",
+        "Switching researchers to remote setups saved Starlight Therapeutics £450 every single day during their two-week pilot. Beyond cutting expenses, team members turned around trial logs much faster."
+    ),
+    (
+        "In today's evolving digital landscape, organizations must delve into dynamic synergies and foster a rich tapestry of holistic paradigm shifts to unlock continuous innovation.",
+        "Companies that want steady progress need to fix how their teams coordinate day-to-day. That means communicating clearly, cutting red tape, and trying new approaches without overthinking."
+    ),
     # 1. Financial & Corporate Earnings
     (
         "The quarterly earnings call took place on October 14, 2025. Total revenue rose by 14.8% to $12.4M, whereas operating margins did not decline below 21%. Furthermore, Dr. Aris Thorne stated that product delivery would not commence before Q1 2026 unless client approvals are finalized.",

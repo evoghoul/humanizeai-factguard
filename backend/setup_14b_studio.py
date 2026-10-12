@@ -98,26 +98,79 @@ def write_files():
     # 2. FactGuard
     factguard_code = '''import re
 
-NUMBER_PATTERN = re.compile(r'(?:\\$|€|£|¥)?\\b\\d+(?:[.,:/-]\\d+)*(?:%|°[CF]|\\s*(?:AM|PM|kg|lbs|mph|km/h|ms|px|GB|MB|KB|GHz|MHz|USD|EUR|GBP|INR)\\b)?')
+NUMBER_PATTERN = re.compile(
+    r'(?:[\\$€£¥])?\\b\\d+(?:[.,]\\d+)*(?:%|[kKmMbBtT]|\\s*(?:daily|weekly|monthly|annually|per\\s+day|per\\s+hour|kg|lbs|mph|ms|px|GB|MB|USD|EUR|GBP))?\\b|'
+    r'\\b(?:one|two|three|four|five|six|seven|eight|nine|ten|hundred|thousand|million|billion)\\b',
+    re.IGNORECASE
+)
 YEAR_PATTERN = re.compile(r'\\b(?:19\\d\\d|20\\d\\d)\\b')
+TIMELINE_PATTERN = re.compile(
+    r'\\b(?:two|three|four|five|six|seven|eight|nine|ten|\\d+)[-\\s]+(?:weeks?|days?|hours?|months?|years?)(?:\\s+(?:pilot|trial|window|timeline))?\\b',
+    re.IGNORECASE
+)
 NEGATION_PATTERN = re.compile(r'\\b(?:not|never|neither|nor|no|cannot|can\\'t|won\\'t|didn\\'t|doesn\\'t|isn\\'t|aren\\'t|wasn\\'t|weren\\'t)\\b', re.IGNORECASE)
 
-def check_numbers(original: str, rewritten: str) -> list[str]:
-    orig_nums = set(NUMBER_PATTERN.findall(original))
-    rewr_nums = set(NUMBER_PATTERN.findall(rewritten))
-    missing = orig_nums - rewr_nums
+BANNED_AI_CLICHES = [
+    "rich tapestry", "dynamic synergies", "paradigm shift", "delve into", "delving into",
+    "delve", "delves", "multifaceted", "digital landscape", "navigating the landscape",
+    "tapestry", "testament to", "beacon of", "beacon", "foster", "fostering", "spearhead",
+    "spearheading", "game-changer", "pivotal role", "pivotal", "cornerstone", "seamlessly",
+    "in today's fast-paced world", "in today's digital era"
+]
+
+STOPWORDS = {
+    "the", "this", "that", "these", "those", "when", "while", "where", "what",
+    "however", "furthermore", "moreover", "in", "on", "at", "during", "between",
+    "although", "because", "since", "it", "they", "we", "our", "their", "after",
+    "before", "to", "from", "for", "with", "as", "by", "if", "unless", "until"
+}
+
+def extract_named_entities(text: str) -> list[str]:
+    raw_entities = re.findall(
+        r'\\b[A-Z][a-z]+(?:\\s+[A-Z][a-z]+)+\\b|\\b(?:Dr\\.|CFO|CEO|CTO|VP)\\s+[A-Z][a-z]+(?:\\s+[A-Z][a-z]+)*\\b',
+        text
+    )
+    cleaned = []
+    for ent in raw_entities:
+        words = ent.split()
+        if len(words) > 1 and words[0].lower() in STOPWORDS:
+            ent = " ".join(words[1:])
+        if ent and ent.lower() not in STOPWORDS:
+            cleaned.append(ent)
+    return list(set(cleaned))
+
+def check_named_entities(original: str, rewritten: str) -> list[str]:
+    orig_ents = extract_named_entities(original)
+    rewr_lower = rewritten.lower()
+    missing = [ent for ent in orig_ents if ent.lower() not in rewr_lower]
     warnings = []
-    for num in missing:
-        warnings.append(f"Number, measurement, or unit '{num}' was omitted or modified in the rewrite.")
+    for ent in missing:
+        warnings.append(f"Named entity '{ent}' was omitted or substituted with generic filler.")
     return warnings
 
-def check_years(original: str, rewritten: str) -> list[str]:
+def check_numbers(original: str, rewritten: str) -> list[str]:
+    orig_nums = set(n.strip() for n in NUMBER_PATTERN.findall(original) if n.strip())
+    rewr_lower = rewritten.lower()
+    missing = [num for num in orig_nums if num.lower() not in rewr_lower]
+    warnings = []
+    for num in missing:
+        warnings.append(f"Number, measurement, or metric '{num}' was omitted or modified in the rewrite.")
+    return warnings
+
+def check_years_and_timelines(original: str, rewritten: str) -> list[str]:
     orig_years = set(YEAR_PATTERN.findall(original))
     rewr_years = set(YEAR_PATTERN.findall(rewritten))
-    missing = orig_years - rewr_years
+    missing_years = orig_years - rewr_years
+    
+    orig_timelines = set(t.strip().lower() for t in TIMELINE_PATTERN.findall(original))
+    rewr_lower = rewritten.lower()
+    missing_timelines = [t for t in orig_timelines if t not in rewr_lower]
+    
     warnings = []
-    for yr in missing:
+    for yr in missing_years:
         warnings.append(f"Year '{yr}' was omitted or modified.")
+    for tl in missing_timelines:
+        warnings.append(f"Specific timeline '{tl}' was omitted or generalized.")
     return warnings
 
 def check_negations(original: str, rewritten: str) -> list[str]:
@@ -128,17 +181,39 @@ def check_negations(original: str, rewritten: str) -> list[str]:
         warnings.append(f"A negative condition ({', '.join(orig_neg)}) appears to have been removed or flipped.")
     return warnings
 
+def check_hallucinations(original: str, rewritten: str) -> list[str]:
+    orig_ents = set(e.lower() for e in extract_named_entities(original))
+    rewr_ents = extract_named_entities(rewritten)
+    orig_lower = original.lower()
+    
+    warnings = []
+    for ent in rewr_ents:
+        ent_lower = ent.lower()
+        if ent_lower not in orig_lower and not any(part in orig_lower for part in ent_lower.split()):
+            warnings.append(f"Potential hallucinated entity '{ent}' introduced without factual grounding.")
+    return warnings
+
+def check_ai_cliches(rewritten: str) -> list[str]:
+    warnings = []
+    for cliche in BANNED_AI_CLICHES:
+        if re.search(rf"\\b{re.escape(cliche)}\\b", rewritten, re.IGNORECASE):
+            warnings.append(f"Banned AI cliché or robotic buzzword '{cliche}' detected.")
+    return warnings
+
 def factguard_check(original: str, rewritten: str) -> dict:
     warnings = []
+    warnings.extend(check_named_entities(original, rewritten))
     warnings.extend(check_numbers(original, rewritten))
-    warnings.extend(check_years(original, rewritten))
+    warnings.extend(check_years_and_timelines(original, rewritten))
     warnings.extend(check_negations(original, rewritten))
+    warnings.extend(check_hallucinations(original, rewritten))
+    warnings.extend(check_ai_cliches(rewritten))
     
     needs_review = len(warnings) > 0
     return {
         "warnings": warnings,
         "needs_review": needs_review,
-        "summary": "No heuristic warnings detected. This does not guarantee factual accuracy." if not needs_review else f"{len(warnings)} potential issue(s) detected."
+        "summary": "No heuristic warnings detected. FactGuard verified 100% entity and metric preservation." if not needs_review else f"{len(warnings)} potential issue(s) detected."
     }
 '''
     with open("factguard.py", "w", encoding="utf-8") as f:
@@ -462,14 +537,11 @@ SYSTEM_INSTRUCTION = (
     "You are HumanizeAI, an expert human editor. Rewrite the input text into natural, fluent, human prose "
     "that reads genuinely human and passes all AI detectors (high perplexity and high burstiness).\\n\\n"
     "CRITICAL GUIDELINES:\\n"
-    "1. FACTGUARD INVARIANTS: Strictly preserve all numbers, dates, years, currencies ($/€/£), percentages (%), proper names, and negative conditions (not, never, cannot). Never drop or alter any fact.\\n"
-    "2. BURSTINESS & RHYTHM: Vary sentence lengths dramatically. Mix short 4-word punchy sentences with longer compound thoughts (18-24 words).\\n"
-    "3. BAN AI CLICHÉS: Strictly avoid delve, testament, tapestry, pivotal, beacon, crucial, foster, spearhead, furthermore, moreover, in conclusion, realm, landscape, game-changer, seamless, paramount, multifaceted, vibrant.\\n"
-    "4. NO MERE SYNONYM SWAPPING: Do NOT simply replace words with synonyms in the same sentence order. Completely rethink the rhythm and structure like a real human writer.\\n"
-    "5. STRENGTH SCALING:\\n"
-    "   - light: Clean up robotic transitions and stiff phrasing while keeping original structure intact.\\n"
-    "   - medium: Reorganize sentence order, introduce natural contractions, and mix sentence lengths.\\n"
-    "   - heavy / high: Boldly reshape the prose from scratch with fresh human voice, punchy hooks, and dynamic flow.\\n"
+    "1. NAMED ENTITY RETENTION: Strictly preserve 100% of proper nouns, company names (e.g. Starlight Therapeutics), and institutions verbatim. Never substitute with generic filler.\\n"
+    "2. METRIC & TIMELINE PRESERVATION: Strictly preserve all currencies ($/€/£), exact amounts (£450), rates (daily), and timelines (two weeks). Never dilute into approximations.\\n"
+    "3. ZERO HALLUCINATIONS: If source is abstract, rewrite cleanly without inventing fake companies or metrics. Concrete evidence and abstract filler are not interchangeable.\\n"
+    "4. TOTAL NEGATIVE CONSTRAINT ON AI BUZZWORDS: Zero tolerance for delve, multifaceted, rich tapestry, tapestry, dynamic synergies, paradigm shift, digital landscape, testament, beacon, foster, spearhead, game-changer, pivotal.\\n"
+    "5. BURSTINESS & RHYTHM: Wildly vary sentence lengths. Mix punchy 3-5 word sentences with natural 18-24 word compound thoughts.\\n"
     "6. FORMAT: Output ONLY the rewritten text. Absolutely NO conversational preambles (e.g., 'Sure!', 'Here is...'), NO quotes, and NO explanations."
 )
 

@@ -114,7 +114,7 @@ SYSTEM_INSTRUCTION = (
     "You are HumanizeAI, an expert human editor. Rewrite the input text into authentic, natural human prose "
     "that passes all plagiarism checkers (Turnitin, CopyLeaks, Grammarly) and AI detectors (GPTZero, ZeroGPT, Turnitin AI) "
     "with 0% detection, strictly adhering to Wikipedia's 'Signs of AI-generated text' negative constraints.\n\n"
-    "CRITICAL ANTI-PLAGIARISM & ANTI-AI NEGATIVE CONSTRAINTS (NEVER BREAK THESE):\n"
+    "CRITICAL ANTI-PLAGIARISM, ANTI-AI & FACTGUARD INVARIANTS (NEVER BREAK THESE):\n"
     "1. ZERO N-GRAM PLAGIARISM OVERLAP: Plagiarism checkers flag 4 or more consecutive identical words. "
     "You MUST aggressively rephrase, restructure, and invert the syntax of every sentence. Do NOT preserve the grammatical "
     "order or phrase sequences of the original text. Reorder ideas, swap active and passive voice, and use distinct vocabulary while keeping all facts 100% accurate.\n"
@@ -123,13 +123,17 @@ SYSTEM_INSTRUCTION = (
     "3. NO NEGATIVE PARALLELISMS: Strictly forbid 'not just X, but Y', 'it's not about X, it's about Y', or 'not only X, but also Y'. State claims directly without formulaic contrast.\n"
     "4. NO RULE OF THREES: Never list three adjectives, adverbs, or nouns in a rhythmic row (e.g., avoid 'innovative, efficient, and transformative'). Use a single strong word.\n"
     "5. NO 'FALSE RANGES': Never use the lazy sweep 'From X to Y' (e.g., avoid 'From startups to enterprises', 'From marketing to engineering').\n"
-    "6. ZERO AI VOCABULARY: Total ban on AI dead-giveaways: delve, intricate, tapestry, pivotal, beacon, crucial, foster, spearhead, furthermore, moreover, in conclusion, realm, landscape, game-changer, seamless, paramount, multifaceted, vibrant, revolutionize, underscore, shed light on, testament, holistic, enhance, cornerstone, in today's fast-paced world.\n"
+    "6. TOTAL NEGATIVE CONSTRAINT ON AI TROPES & BUZZWORDS: Complete ban on robotic AI clichés and corporate filler: delve, delving, delve into, multifaceted, rich tapestry, tapestry, dynamic synergies, paradigm shift, digital landscape, navigating the landscape, realm, testament to, testament, beacon, foster, fostering, spearhead, spearheading, game-changer, pivotal role, pivotal, cornerstone, seamless, seamlessly, vibrant, holistic, elevate, unlock, embrace, resonate, embark, journey, plethora, crucial, paramount, moreover, furthermore, in conclusion, it is worth noting, shed light on, underscores, at the end of the day. Using any of these terms is an immediate failure. Translate abstract buzzwords into concrete, straightforward human language.\n"
     "7. NO COMPULSIVE SUMMARIES OR CLICHÉ TRANSITIONS: Never end with a generic wrap-up ('In summary,', 'Overall, this highlights...', 'Ultimately, ...'). Never use cliché transitions like 'That said,', 'In other words,', 'At the end of the day,', 'Here's the catch:'. When the thought ends, stop writing.\n"
     "8. NO VAGUE ATTRIBUTION: Avoid empty hedges ('It is important to note that', 'Some critics argue', 'It remains to be seen').\n"
     "9. EXTREME BURSTINESS & SENTENCE VARIETY: Wildly vary sentence lengths. Alternate 2-to-5 word punchy sentences/fragments ('Fair enough.', 'Hardly surprising.', 'It works.') with natural 18-to-26 word compound thoughts. Never write consecutive sentences of equal length.\n"
-    "10. FACTGUARD INVARIANTS (100% INVIOLABLE): Strictly preserve every number, date, year, currency ($/€/£), percentage (%), proper name, and negative condition (not, never, cannot). Never drop, round, or alter any fact.\n"
-    "11. PRESERVE FULL LENGTH AND DEPTH (DO NOT SUMMARIZE OR SHORTEN): Paraphrasing is NOT summarizing. The rewritten text MUST maintain the full depth, completeness, and approximate length of the original passage (90% to 110% of original word count). Do NOT combine multiple distinct thoughts into a single short sentence, and do NOT drop background details, nuances, or explanations.\n"
-    "12. STRICT DOCUMENT & EMAIL FORMAT PRESERVATION (NEVER COLLAPSE INTO A SINGLE PARAGRAPH):\n"
+    "10. NAMED ENTITY RETENTION (ZERO ERASURE / ZERO GENERALIZATION): Every proper noun, corporate name (e.g., 'Starlight Therapeutics'), medical or tech institution, person, brand, and product name in the source text MUST be retained 100% verbatim. NEVER substitute a specific named entity with generic nouns or corporate filler (e.g., DO NOT replace 'Starlight Therapeutics' with 'the company', 'the firm', 'an organization', or 'a leading enterprise'). Erasing or generalizing a named entity destroys narrative meaning.\n"
+    "11. METRIC, CURRENCY, AND TIMELINE PRESERVATION (ZERO DILUTION): Every exact numerical metric, currency amount and symbol (£, $, €, ¥), unit, rate (e.g., '£450 daily savings', '£450 per day'), percentage (%), and timeline (e.g., 'two weeks', '48 hours', 'three months') MUST be preserved verbatim. NEVER dilute hard figures into generic approximations (e.g., DO NOT replace '£450 daily savings' with 'substantial cost reductions' or 'two weeks' with 'a few weeks').\n"
+    "12. ZERO HALLUCINATIONS / GROUNDED SPECIFICITY: Maintain strict factual grounding:\n"
+    "    (a) If the source is abstract or high-level (like generic statements on remote work), rewrite it into crisp human prose WITHOUT inventing fictional company names, fake dollar figures, or fabricated dates. Never hallucinate specific entities to anchor abstract thoughts.\n"
+    "    (b) If the source contains concrete facts and figures, retain every single one. Concrete evidence and abstract filler are NOT interchangeable and must never be swapped.\n"
+    "13. PRESERVE FULL LENGTH AND DEPTH (DO NOT SUMMARIZE OR SHORTEN): Paraphrasing is NOT summarizing. The rewritten text MUST maintain the full depth, completeness, and approximate length of the original passage (90% to 110% of original word count). Do NOT combine multiple distinct thoughts into a single short sentence, and do NOT drop background details, nuances, or explanations.\n"
+    "14. STRICT DOCUMENT & EMAIL FORMAT PRESERVATION (NEVER COLLAPSE INTO A SINGLE PARAGRAPH):\n"
     "    - If the input is an email, letter, memo, or correspondence, you MUST preserve its exact structural layout:\n"
     "      * Subject lines must stay on their own line with a blank line after.\n"
     "      * Salutations/greetings ('Dear [Name],', 'Hi [Name],', 'To [Name]:') must stay on their own line with a blank line (\\n\\n) after.\n"
@@ -137,7 +141,7 @@ SYSTEM_INSTRUCTION = (
     "      * Bullet points and numbered lists must remain as individual list items on their own lines.\n"
     "      * Sign-offs ('Best regards,', 'Sincerely,', 'Warmest regards,', 'Cheers,') must appear on their own line preceded by a blank line (\\n\\n).\n"
     "      * Signature lines ([Name], [Title], [Company], [Contact]) must each appear on their own separate lines.\n"
-    "13. STRICT FORMAT: Output ONLY the raw rewritten text. Absolutely NO conversational preambles ('Sure!', 'Here is a...'), NO quotation marks, and NO explanations."
+    "15. STRICT FORMAT: Output ONLY the raw rewritten text. Absolutely NO conversational preambles ('Sure!', 'Here is a...'), NO quotation marks, and NO explanations."
 )
 
 def strip_preamble(text: str) -> str:
@@ -268,6 +272,44 @@ def clean_wikipedia_ai_tells(text: str, original_text: str = "") -> str:
     # Clean residual AI cliché transitions
     cleaned = re.sub(r"\b(?:In other words|That said|That being said|At the end of the day|Here's the catch[:!.]?|Here is the thing[:!.]?|To put it simply),?\s*", "", cleaned, flags=re.IGNORECASE)
     
+    # Clean residual AI tropes and buzzwords
+    residual_tropes = {
+        r"\brich tapestry of\b": "diverse mix of",
+        r"\brich tapestry\b": "broad variety",
+        r"\btapestry of\b": "blend of",
+        r"\bdynamic synergies\b": "strong teamwork",
+        r"\bdynamic synergy\b": "teamwork",
+        r"\bparadigm shift\b": "major change",
+        r"\bparadigm shifts\b": "major changes",
+        r"\bdigital landscape\b": "online environment",
+        r"\bnavigating the landscape of\b": "dealing with",
+        r"\bthe landscape of\b": "the world of",
+        r"\bmultifaceted\b": "layered",
+        r"\bdelve into\b": "look into",
+        r"\bdelving into\b": "looking into",
+        r"\bdelves into\b": "looks into",
+        r"\ba testament to\b": "clear proof of",
+        r"\bbeacon of\b": "model for",
+        r"\bplays a vital role in\b": "is key to",
+        r"\bplays a key role in\b": "drives",
+        r"\bplay a pivotal role\b": "matter deeply",
+        r"\bpivotal\b": "vital",
+        r"\bfoster\b": "encourage",
+        r"\bfostering\b": "encouraging",
+        r"\bspearhead\b": "lead",
+        r"\bspearheaded\b": "led",
+        r"\bspearheading\b": "leading",
+        r"\bgame-changer\b": "breakthrough",
+        r"\bcornerstone\b": "foundation",
+        r"\bin profound ways\b": "completely",
+        r"\bcreative breakthroughs\b": "fresh ideas",
+        r"\boperational efficiency\b": "speed and clarity",
+        r"\bstrategic frameworks\b": "a solid plan",
+        r"\bseamlessly\b": "smoothly",
+    }
+    for pattern, replacement in residual_tropes.items():
+        cleaned = re.sub(pattern, replacement, cleaned, flags=re.IGNORECASE)
+
     # Clean duplicate punctuation on the same line
     cleaned = re.sub(r"[^\S\r\n]*,[^\S\r\n]*,[^\S\r\n]*", ", ", cleaned)
     cleaned = re.sub(r"[^\S\r\n]*\.[^\S\r\n]*\.[^\S\r\n]*", ". ", cleaned)
@@ -295,20 +337,22 @@ def humanize(req: HumanizeRequest):
             strength_instruction = (
                 "Strength: Heavy (Aggressive structural overhaul, 0% verbatim n-gram overlap, "
                 "extreme sentence length variation, zero dashes, zero semicolons, "
-                "CRITICAL: preserve 100% of exact numbers, dates, and percentages without rounding)"
+                "CRITICAL: 100% Named Entity Retention e.g. Starlight Therapeutics, "
+                "100% Metric & Timeline Preservation e.g. £450 daily and two weeks, "
+                "zero generic filler substitutions, zero hallucinations)"
             )
         elif strength_val == "light":
             gen_temp = 0.85
             gen_top_p = 0.95
             gen_top_k = 50
             gen_rep_pen = 1.10
-            strength_instruction = "Strength: Light (Gentle polish, natural cadence)"
+            strength_instruction = "Strength: Light (Gentle polish, natural cadence, 100% entity and metric retention)"
         else: # Medium
             gen_temp = 1.00
             gen_top_p = 0.95
             gen_top_k = 50
             gen_rep_pen = 1.16
-            strength_instruction = "Strength: Medium (Balanced humanization, natural burstiness, zero cliché AI vocabulary)"
+            strength_instruction = "Strength: Medium (Balanced humanization, natural burstiness, zero cliché AI vocabulary, 100% entity and metric retention)"
 
         messages = [
             {"role": "system", "content": SYSTEM_INSTRUCTION},
@@ -319,6 +363,22 @@ def humanize(req: HumanizeRequest):
             {
                 "role": "assistant",
                 "content": "Work life shifted fast after automation arrived. Most companies now run machine learning across their daily routines, hoping to save hours and spark fresh ideas. It helps. Still, diving in without an actual plan usually leaves teams untangling messy software instead of getting ahead."
+            },
+            {
+                "role": "user",
+                "content": "Tone: Professional\nStrength: Heavy\n\nOriginal Text:\nAt Starlight Therapeutics, shifting staff to remote workflows generated £450 daily savings over a two-week pilot, while enhancing research documentation speed."
+            },
+            {
+                "role": "assistant",
+                "content": "Switching researchers to remote setups saved Starlight Therapeutics £450 every single day during their two-week pilot. Beyond cutting expenses, team members turned around trial logs much faster."
+            },
+            {
+                "role": "user",
+                "content": "Tone: Professional\nStrength: Heavy\n\nOriginal Text:\nIn today's evolving digital landscape, organizations must delve into dynamic synergies and foster a rich tapestry of holistic paradigm shifts to unlock continuous innovation."
+            },
+            {
+                "role": "assistant",
+                "content": "Companies that want steady progress need to fix how their teams coordinate day-to-day. That means communicating clearly, cutting red tape, and trying new approaches without overthinking."
             },
             {
                 "role": "user",
