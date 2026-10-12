@@ -5,7 +5,7 @@ Combines:
 2. Hugging Face PAWS / Paraphrase datasets (for deep syntactic restructuring & 0% plagiarism)
 3. FactGuard Gold Seed Pairs (for 100% entity, metric, timeline, and intent lock)
 
-Outputs: backend/expanded_training_data_14b.jsonl ready for train_14b.py
+Outputs: expanded_training_data_14b.jsonl ready for train_14b.py
 """
 
 import os
@@ -15,11 +15,17 @@ import json
 import glob
 from pathlib import Path
 
-# Paths
-BASE_DIR = Path(__file__).resolve().parent
-DATA_DIR = BASE_DIR / "data"
-OUTPUT_FILE = BASE_DIR / "expanded_training_data_14b.jsonl"
-EXISTING_FILE = BASE_DIR / "expanded_training_data_14b.jsonl"
+# Paths (works whether run from repo root or backend/)
+SCRIPT_DIR = Path(__file__).resolve().parent
+CWD = Path.cwd()
+
+# Find data dir and jsonl target
+candidate_data_dirs = [SCRIPT_DIR / "data", CWD / "data", SCRIPT_DIR, CWD]
+DATA_DIR = next((d for d in candidate_data_dirs if d.exists() and any(d.glob("*.csv"))), SCRIPT_DIR / "data")
+
+OUTPUT_FILE = SCRIPT_DIR / "expanded_training_data_14b.jsonl"
+if not OUTPUT_FILE.parent.exists():
+    OUTPUT_FILE = CWD / "expanded_training_data_14b.jsonl"
 
 SYSTEM_PROMPT = (
     "You are HumanizeAI, an expert human editor. Rewrite the input text into natural, fluent, human prose "
@@ -37,10 +43,15 @@ BANNED_CLICHES = [
 
 def extract_numbers_and_symbols(text: str) -> set:
     """Extracts all numbers, percentages, currencies, and year numbers."""
-    tokens = re.findall(r'[\$£€]?\b\d+(?:[\.,]\d+)?%?\b', text)
-    return set(tokens)
+    return set(re.findall(r'[\$£€]?\b\d+(?:[\.,]\d+)?%?\b', text))
 
-def is_factguard_compliant(source: str, target: str) -> bool:
+def get_content_words(text: str) -> set:
+    """Extracts meaningful content words to verify topic alignment."""
+    words = re.findall(r'\b[a-zA-Z]{4,}\b', text.lower())
+    stopwords = {"this", "that", "with", "from", "have", "were", "they", "their", "which", "about", "would", "there", "could", "other", "these", "should", "because"}
+    return {w for w in words if w not in stopwords}
+
+def is_factguard_compliant(source: str, target: str, check_semantic_overlap: bool = False) -> bool:
     """Verifies that the target rewrite passes all FactGuard invariant rules."""
     src = source.strip()
     tgt = target.strip()
@@ -63,11 +74,20 @@ def is_factguard_compliant(source: str, target: str) -> bool:
     if src.endswith('?') and not tgt.endswith('?'):
         return False
 
-    # 4. Length Preservation: Avoid extreme summarization or bloat (75% - 130%)
+    # 4. Length Preservation: Avoid extreme summarization or bloat (70% - 135%)
     src_len = len(src.split())
     tgt_len = len(tgt.split())
     if tgt_len < max(5, int(src_len * 0.70)) or tgt_len > int(src_len * 1.35):
         return False
+
+    # 5. Semantic alignment check for external unpaired corpora
+    if check_semantic_overlap:
+        src_words = get_content_words(src)
+        tgt_words = get_content_words(tgt)
+        if src_words and tgt_words:
+            overlap = len(src_words.intersection(tgt_words)) / max(len(src_words), 1)
+            if overlap < 0.25:
+                return False
 
     return True
 
@@ -81,13 +101,14 @@ def format_sample(source: str, target: str) -> dict:
     }
 
 def load_kaggle_samples(max_samples: int = 5000):
-    """Loads Kaggle CSV files from ./data or ./ if present."""
+    """Loads Kaggle CSV files from data directories."""
     samples = []
-    csv_candidates = list(glob.glob(str(DATA_DIR / "*.csv"))) + list(glob.glob(str(BASE_DIR / "*.csv")))
-    
+    csv_candidates = list(glob.glob(str(DATA_DIR / "*.csv"))) + list(glob.glob(str(SCRIPT_DIR / "data" / "*.csv"))) + list(glob.glob(str(CWD / "data" / "*.csv")))
+    # Deduplicate paths
+    csv_candidates = list(dict.fromkeys(csv_candidates))
+
     if not csv_candidates:
-        print(f"[*] No Kaggle CSV files found in {DATA_DIR} or {BASE_DIR}.")
-        print("    If you downloaded DAIGT-V2, place the CSV in backend/data/ folder.")
+        print(f"[*] No CSV files found yet in {DATA_DIR} or ./data.")
         return samples
 
     try:
@@ -97,44 +118,44 @@ def load_kaggle_samples(max_samples: int = 5000):
         return samples
 
     for csv_path in csv_candidates:
-        print(f"[*] Inspecting Kaggle CSV: {csv_path}")
+        print(f"[*] Reading Kaggle CSV: {csv_path}")
         try:
             df = pd.read_csv(csv_path)
+            print(f"    Total rows in file: {len(df)}")
             print(f"    Columns found: {list(df.columns)}")
             
-            # Common DAIGT / AI-vs-Human column patterns
-            # 1. 'prompt' / 'generated' vs 'human'
-            # 2. 'text' and 'label' (0 = human, 1 = generated)
             if "text" in df.columns and "label" in df.columns:
-                humans = df[df["label"] == 0]["text"].dropna().tolist()
-                ais = df[df["label"] == 1]["text"].dropna().tolist()
-                print(f"    Found {len(humans)} human texts and {len(ais)} AI texts.")
-                # Pair them if they match prompt_id or slice
-                if "prompt_name" in df.columns or "prompt_id" in df.columns:
-                    col = "prompt_name" if "prompt_name" in df.columns else "prompt_id"
+                # Group by prompt if available to get topic-matched pairs
+                col = "prompt_name" if "prompt_name" in df.columns else ("prompt_id" if "prompt_id" in df.columns else None)
+                if col:
+                    print(f"    Grouping by topic '{col}' for precise topic matching...")
                     for pid, group in df.groupby(col):
                         grp_h = group[group["label"] == 0]["text"].dropna().tolist()
                         grp_a = group[group["label"] == 1]["text"].dropna().tolist()
                         for a_text, h_text in zip(grp_a, grp_h):
-                            if is_factguard_compliant(a_text, h_text):
-                                samples.append((a_text, h_text))
+                            # Compare first paragraphs to ensure manageable training length
+                            a_para = a_text.split("\n\n")[0].strip()
+                            h_para = h_text.split("\n\n")[0].strip()
+                            if is_factguard_compliant(a_para, h_para, check_semantic_overlap=True):
+                                samples.append((a_para, h_para))
                                 if len(samples) >= max_samples:
                                     break
-                else:
-                    for a_text, h_text in zip(ais[:max_samples], humans[:max_samples]):
-                        if is_factguard_compliant(a_text, h_text):
-                            samples.append((a_text, h_text))
-            elif "generated_text" in df.columns and "human_text" in df.columns:
-                for _, row in df.iterrows():
-                    a_text, h_text = str(row["generated_text"]), str(row["human_text"])
-                    if is_factguard_compliant(a_text, h_text):
-                        samples.append((a_text, h_text))
                         if len(samples) >= max_samples:
                             break
+                else:
+                    humans = df[df["label"] == 0]["text"].dropna().tolist()
+                    ais = df[df["label"] == 1]["text"].dropna().tolist()
+                    for a_text, h_text in zip(ais, humans):
+                        a_para = a_text.split("\n\n")[0].strip()
+                        h_para = h_text.split("\n\n")[0].strip()
+                        if is_factguard_compliant(a_para, h_para, check_semantic_overlap=True):
+                            samples.append((a_para, h_para))
+                            if len(samples) >= max_samples:
+                                break
         except Exception as e:
-            print(f"[!] Error reading {csv_path}: {e}")
+            print(f"[!] Warning reading {csv_path}: {e}")
 
-    print(f"[+] Extracted {len(samples)} valid Kaggle samples.")
+    print(f"[+] Successfully extracted {len(samples)} FactGuard-compliant Kaggle samples.")
     return samples
 
 def load_huggingface_paws(max_samples: int = 3000):
@@ -144,28 +165,30 @@ def load_huggingface_paws(max_samples: int = 3000):
     try:
         from datasets import load_dataset
         ds = load_dataset("google-research-datasets/paws", "labeled_final", split="train")
-        # In PAWS, label=1 means genuine semantic paraphrase with different syntax
         for item in ds:
             if item.get("label") == 1:
-                s1 = item.get("sentence1", "")
-                s2 = item.get("sentence2", "")
+                s1 = str(item.get("sentence1", "")).strip()
+                s2 = str(item.get("sentence2", "")).strip()
                 if is_factguard_compliant(s1, s2):
                     samples.append((s1, s2))
                     if len(samples) >= max_samples:
                         break
         print(f"[+] Loaded {len(samples)} valid PAWS paraphrase pairs.")
     except Exception as e:
-        print(f"[!] Note: Could not load PAWS from Hugging Face ({e}). Skipping online fetch.")
+        print(f"[*] Note: Could not load PAWS from Hugging Face ({e}). Continuing with available data.")
     return samples
 
 def load_existing_samples():
     """Loads existing validated samples from expanded_training_data_14b.jsonl."""
     samples = []
-    if not EXISTING_FILE.exists():
+    search_paths = [OUTPUT_FILE, SCRIPT_DIR / "expanded_training_data_14b.jsonl", CWD / "expanded_training_data_14b.jsonl"]
+    target_path = next((p for p in search_paths if p.exists()), None)
+    
+    if not target_path:
         return samples
         
-    print(f"[*] Reading existing FactGuard samples from {EXISTING_FILE}...")
-    with open(EXISTING_FILE, "r", encoding="utf-8") as f:
+    print(f"[*] Reading existing FactGuard samples from {target_path}...")
+    with open(target_path, "r", encoding="utf-8") as f:
         for line in f:
             if line.strip():
                 try:
