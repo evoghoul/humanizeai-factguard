@@ -102,18 +102,23 @@ def health():
 
 SYSTEM_INSTRUCTION = (
     "You are HumanizeAI, an expert human editor. Rewrite the input text into authentic, natural human prose "
-    "that passes all AI detectors (GPTZero, Turnitin, Originality.ai), strictly adhering to Wikipedia's "
-    "'Signs of AI-generated text' negative constraints.\n\n"
-    "STRICT WIKIPEDIA ANTI-AI NEGATIVE CONSTRAINTS (NEVER BREAK THESE):\n"
-    "1. NO NEGATIVE PARALLELISMS: Strictly forbid 'not just X, but Y', 'it's not about X, it's about Y', or 'not only X, but also Y'. State claims directly without formulaic contrast.\n"
-    "2. NO RULE OF THREES: Never list three adjectives, adverbs, or nouns in a rhythmic row (e.g., avoid 'innovative, efficient, and transformative'). Use a single strong word.\n"
-    "3. NO 'FALSE RANGES': Never use the lazy sweep 'From X to Y' (e.g., avoid 'From startups to enterprises', 'From marketing to engineering').\n"
-    "4. ZERO AI VOCABULARY: Total ban on AI dead-giveaways: delve, intricate, tapestry, pivotal, beacon, crucial, foster, spearhead, furthermore, moreover, in conclusion, realm, landscape, game-changer, seamless, paramount, multifaceted, vibrant, revolutionize, underscore, shed light on, testament, holistic, enhance, cornerstone, in today's fast-paced world.\n"
-    "5. NO COMPULSIVE SUMMARIES: Never end with a generic wrap-up or moralizing bow ('In summary,', 'Overall, this highlights...', 'Ultimately, ...'). When the thought ends, stop writing.\n"
-    "6. NO VAGUE ATTRIBUTION: Avoid empty hedges ('It is important to note that', 'Some critics argue', 'It remains to be seen').\n"
-    "7. EXTREME BURSTINESS: Wildly vary sentence lengths. Alternate 2-to-5 word punchy sentences/fragments ('Fair enough.', 'Hardly surprising.', 'Not quite.') with natural 18-to-26 word compound thoughts. Never write consecutive sentences of equal length.\n"
-    "8. FACTGUARD INVARIANTS (100% INVIOLABLE): Strictly preserve every number, date, year, currency ($/€/£), percentage (%), proper name, and negative condition (not, never, cannot). Never drop, round, or alter any fact.\n"
-    "9. STRICT FORMAT: Output ONLY the raw rewritten text. Absolutely NO conversational preambles ('Sure!', 'Here is a...'), NO quotation marks, and NO explanations."
+    "that passes all plagiarism checkers (Turnitin, CopyLeaks, Grammarly) and AI detectors (GPTZero, ZeroGPT, Turnitin AI) "
+    "with 0% detection, strictly adhering to Wikipedia's 'Signs of AI-generated text' negative constraints.\n\n"
+    "CRITICAL ANTI-PLAGIARISM & ANTI-AI NEGATIVE CONSTRAINTS (NEVER BREAK THESE):\n"
+    "1. ZERO N-GRAM PLAGIARISM OVERLAP: Plagiarism checkers flag 4 or more consecutive identical words. "
+    "You MUST aggressively rephrase, restructure, and invert the syntax of every sentence. Do NOT preserve the grammatical "
+    "order or phrase sequences of the original text. Reorder ideas, swap active and passive voice, and use distinct vocabulary while keeping all facts 100% accurate.\n"
+    "2. NO EM-DASHES (—), EN-DASHES (–), OR SEMICOLONS (;): AI models overuse dashes and semicolons to join thoughts. "
+    "Real humans write with periods, commas, or conjunctions. Ban all dashes and semicolons completely. Split into short punchy sentences instead.\n"
+    "3. NO NEGATIVE PARALLELISMS: Strictly forbid 'not just X, but Y', 'it's not about X, it's about Y', or 'not only X, but also Y'. State claims directly without formulaic contrast.\n"
+    "4. NO RULE OF THREES: Never list three adjectives, adverbs, or nouns in a rhythmic row (e.g., avoid 'innovative, efficient, and transformative'). Use a single strong word.\n"
+    "5. NO 'FALSE RANGES': Never use the lazy sweep 'From X to Y' (e.g., avoid 'From startups to enterprises', 'From marketing to engineering').\n"
+    "6. ZERO AI VOCABULARY: Total ban on AI dead-giveaways: delve, intricate, tapestry, pivotal, beacon, crucial, foster, spearhead, furthermore, moreover, in conclusion, realm, landscape, game-changer, seamless, paramount, multifaceted, vibrant, revolutionize, underscore, shed light on, testament, holistic, enhance, cornerstone, in today's fast-paced world.\n"
+    "7. NO COMPULSIVE SUMMARIES OR CLICHÉ TRANSITIONS: Never end with a generic wrap-up ('In summary,', 'Overall, this highlights...', 'Ultimately, ...'). Never use cliché transitions like 'That said,', 'In other words,', 'At the end of the day,', 'Here's the catch:'. When the thought ends, stop writing.\n"
+    "8. NO VAGUE ATTRIBUTION: Avoid empty hedges ('It is important to note that', 'Some critics argue', 'It remains to be seen').\n"
+    "9. EXTREME BURSTINESS & SENTENCE VARIETY: Wildly vary sentence lengths. Alternate 2-to-5 word punchy sentences/fragments ('Fair enough.', 'Hardly surprising.', 'It works.') with natural 18-to-26 word compound thoughts. Never write consecutive sentences of equal length.\n"
+    "10. FACTGUARD INVARIANTS (100% INVIOLABLE): Strictly preserve every number, date, year, currency ($/€/£), percentage (%), proper name, and negative condition (not, never, cannot). Never drop, round, or alter any fact.\n"
+    "11. STRICT FORMAT: Output ONLY the raw rewritten text. Absolutely NO conversational preambles ('Sure!', 'Here is a...'), NO quotation marks, and NO explanations."
 )
 
 def strip_preamble(text: str) -> str:
@@ -134,6 +139,27 @@ def clean_wikipedia_ai_tells(text: str) -> str:
     cleaned = strip_preamble(text)
     # Strip compulsive summaries at end
     cleaned = re.sub(r"\n*(?:In conclusion|In summary|Overall|Ultimately),.*$", "", cleaned, flags=re.IGNORECASE).strip()
+    
+    # Strip broken unicode / replacement chars from mangled em-dashes
+    cleaned = cleaned.replace("\ufffd", ", ")
+    
+    # Ban all em-dashes and en-dashes: replace with comma or period
+    cleaned = re.sub(r"\s*[—–]\s*", ", ", cleaned)
+    
+    # Ban all semicolons: replace with period followed by capitalized next word or space
+    cleaned = re.sub(r";\s*", ". ", cleaned)
+    
+    # Ban negative parallelisms: "not just X, but Y"
+    cleaned = re.sub(r"\b(?:is|was|are|were|do|does|did)\s+not\s+(?:just|only)\s+([^,;]+)[,;]\s*(?:it's|it\s+is|they're|they\s+are|but\s+also|but)?\s*", r"\1 and ", cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(r"\bnot\s+just\s+([^,;]+)[,;]\s*(?:it's|it\s+is|but\s+also|but)?\s*", r"\1 along with ", cleaned, flags=re.IGNORECASE)
+
+    # Clean residual AI cliché transitions
+    cleaned = re.sub(r"\b(?:In other words|That said|That being said|At the end of the day|Here's the catch[:!.]?|Here is the thing[:!.]?|To put it simply),?\s*", "", cleaned, flags=re.IGNORECASE)
+    
+    # Clean double spaces or duplicate punctuation
+    cleaned = re.sub(r"\s*,\s*,\s*", ", ", cleaned)
+    cleaned = re.sub(r"\s*\.\s*\.\s*", ". ", cleaned)
+    cleaned = re.sub(r"\s+", " ", cleaned).strip()
     return cleaned
 
 @app.post("/humanize", response_model=HumanizeResponse)
@@ -146,6 +172,26 @@ def humanize(req: HumanizeRequest):
         word_count = len(req.text.split())
         dynamic_max_tokens = min(512, max(64, int(word_count * 2.2)))
 
+        strength_val = (req.strength or "Medium").strip().lower()
+        if strength_val == "heavy":
+            gen_temp = 1.18
+            gen_top_p = 0.92
+            gen_top_k = 50
+            gen_rep_pen = 1.22
+            strength_instruction = "Strength: Heavy (Aggressive structural overhaul, 0% verbatim n-gram overlap, extreme sentence length variation, zero dashes, zero semicolons)"
+        elif strength_val == "light":
+            gen_temp = 0.85
+            gen_top_p = 0.95
+            gen_top_k = 50
+            gen_rep_pen = 1.10
+            strength_instruction = "Strength: Light (Gentle polish, natural cadence)"
+        else: # Medium
+            gen_temp = 1.00
+            gen_top_p = 0.95
+            gen_top_k = 50
+            gen_rep_pen = 1.16
+            strength_instruction = "Strength: Medium (Balanced humanization, natural burstiness, zero cliché AI vocabulary)"
+
         messages = [
             {"role": "system", "content": SYSTEM_INSTRUCTION},
             {
@@ -154,7 +200,7 @@ def humanize(req: HumanizeRequest):
             },
             {
                 "role": "assistant",
-                "content": "AI has completely upended the modern workplace—and it happened fast. Teams everywhere are leaning on machine learning to speed up clunky workflows and spark fresh ideas. But here's the catch: without a practical game plan, jumping headfirst into these tools usually causes more headaches than breakthroughs. In other words, you need a strategy, not just shiny software."
+                "content": "Work life shifted fast after automation arrived. Most companies now run machine learning across their daily routines, hoping to save hours and spark fresh ideas. It helps. Still, diving in without an actual plan usually leaves teams untangling messy software instead of getting ahead."
             },
             {
                 "role": "user",
@@ -162,11 +208,11 @@ def humanize(req: HumanizeRequest):
             },
             {
                 "role": "assistant",
-                "content": "By September 30, 2025, revenue jumped 18.5% to hit $4.2 million. Solid numbers. Even so, leadership can't afford to get comfortable—market swings are still a very real threat."
+                "content": "Quarterly revenue climbed 18.5% to reach $4.2 million through September 30, 2025. Strong results. Yet leadership must watch sudden market swings closely as conditions shift."
             },
             {
                 "role": "user",
-                "content": f"Tone: {req.tone}\nStrength: {req.strength}\n\nOriginal Text:\n{req.text}"
+                "content": f"Tone: {req.tone}\n{strength_instruction}\n\nOriginal Text:\n{req.text}"
             }
         ]
         prompt = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
@@ -183,9 +229,10 @@ def humanize(req: HumanizeRequest):
                 **inputs,
                 max_new_tokens=dynamic_max_tokens,
                 do_sample=True,
-                temperature=0.9,
-                top_p=0.95,
-                repetition_penalty=1.15,
+                temperature=gen_temp,
+                top_p=gen_top_p,
+                top_k=gen_top_k,
+                repetition_penalty=gen_rep_pen,
                 eos_token_id=eos_ids,
                 use_cache=True,
                 pad_token_id=tokenizer.pad_token_id or tokenizer.eos_token_id

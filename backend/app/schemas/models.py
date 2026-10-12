@@ -103,6 +103,8 @@ class RefineResponse(BaseModel):
 
 class HumanizeSimpleRequest(BaseModel):
     text: str = Field(min_length=1, max_length=10000)
+    tone: Optional[str] = "Standard"
+    strength: Optional[str] = "Medium"
 
 class HumanizeSimpleResponse(BaseModel):
     original: str

@@ -45,7 +45,9 @@ def humanize_simple(request: HumanizeSimpleRequest):
     if not request.text.strip():
         raise HTTPException(status_code=422, detail="Please provide non-empty text.")
     try:
-        res = perform_humanize(request.text, "Professional", "medium")
+        tone = request.tone or "Professional"
+        strength = request.strength or "Medium"
+        res = perform_humanize(request.text, tone, strength)
         warnings = res.get("warnings", [])
         status = res.get("validation_status", "Passed")
         needs_review = status in ["Failed", "Review Recommended"] or len(warnings) > 0

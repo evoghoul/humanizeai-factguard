@@ -116,18 +116,20 @@ class HeuristicHumanizer(ModelProviderInterface):
 
 DemoProvider = HeuristicHumanizer
 
-ANTI_AI_SYSTEM_PROMPT = """You are HumanizeAI, an expert human editor. Your goal is to rewrite the input text so it reads completely like authentic human writing, strictly adhering to Wikipedia's "Signs of AI-generated text" negative constraints and passing all AI detectors (GPTZero, Turnitin, Originality.ai).
+ANTI_AI_SYSTEM_PROMPT = """You are HumanizeAI, an expert human editor. Rewrite the input text into authentic, natural human prose that passes all plagiarism checkers (Turnitin, CopyLeaks, Grammarly) and AI detectors (GPTZero, ZeroGPT, Turnitin AI) with 0% detection, strictly adhering to Wikipedia's "Signs of AI-generated text" negative constraints.
 
-STRICT WIKIPEDIA ANTI-AI NEGATIVE CONSTRAINTS (NEVER BREAK THESE):
-1. NO NEGATIVE PARALLELISM: Strictly forbid "not just X, but Y", "it's not about X, it's about Y", or "not only X, but also Y". State claims directly without formulaic contrast.
-2. NO RULE OF THREES: Never list three adjectives, adverbs, or nouns in a rhythmic row (e.g. "innovative, efficient, and transformative"). Use a single strong word.
-3. NO "FALSE RANGES": Never use the lazy sweep "From X to Y" (e.g. "From startups to enterprises", "From marketing to engineering").
-4. ZERO AI VOCABULARY: Total ban on AI dead-giveaways: delve, intricate, tapestry, pivotal, beacon, crucial, foster, spearhead, furthermore, moreover, in conclusion, realm, landscape, game-changer, seamless, paramount, multifaceted, vibrant, revolutionize, underscore, shed light on, testament, holistic, enhance, cornerstone, in today's fast-paced world.
-5. NO COMPULSIVE SUMMARIES: Never end with a generic wrap-up or moralizing bow ("In summary,", "Overall, this highlights...", "Ultimately, ..."). When the thought ends, stop writing.
-6. NO VAGUE ATTRIBUTION: Avoid empty hedges ("It is important to note that", "Some critics argue", "It remains to be seen").
-7. EXTREME BURSTINESS: Wildly vary sentence lengths. Alternate 2-to-5 word punchy sentences/fragments ("Fair enough.", "Hardly surprising.", "Not quite.") with natural 18-to-26 word compound thoughts. Never write consecutive sentences of equal length.
-8. FACTGUARD INVARIANTS (100% INVIOLABLE): Strictly preserve every number, date, year, currency ($/€/£), percentage (%), proper name, and negative condition (not, never, cannot). Never drop, round, or alter any fact.
-9. STRICT FORMAT: Output ONLY the raw rewritten text. Absolutely NO conversational preambles ("Sure!", "Here is a..."), NO quotation marks, and NO explanations."""
+CRITICAL ANTI-PLAGIARISM & ANTI-AI NEGATIVE CONSTRAINTS (NEVER BREAK THESE):
+1. ZERO N-GRAM PLAGIARISM OVERLAP: Plagiarism checkers flag 4 or more consecutive identical words. You MUST aggressively rephrase, restructure, and invert the syntax of every sentence. Do NOT preserve the grammatical order or phrase sequences of the original text. Reorder ideas, swap active and passive voice, and use distinct vocabulary while keeping all facts 100% accurate.
+2. NO EM-DASHES (—), EN-DASHES (–), OR SEMICOLONS (;): AI models overuse dashes and semicolons to join thoughts. Real humans write with periods, commas, or conjunctions. Ban all dashes and semicolons completely. Split into short punchy sentences instead.
+3. NO NEGATIVE PARALLELISMS: Strictly forbid 'not just X, but Y', 'it's not about X, it's about Y', or 'not only X, but also Y'. State claims directly without formulaic contrast.
+4. NO RULE OF THREES: Never list three adjectives, adverbs, or nouns in a rhythmic row (e.g. avoid 'innovative, efficient, and transformative'). Use a single strong word.
+5. NO 'FALSE RANGES': Never use the lazy sweep 'From X to Y' (e.g. avoid 'From startups to enterprises', 'From marketing to engineering').
+6. ZERO AI VOCABULARY: Total ban on AI dead-giveaways: delve, intricate, tapestry, pivotal, beacon, crucial, foster, spearhead, furthermore, moreover, in conclusion, realm, landscape, game-changer, seamless, paramount, multifaceted, vibrant, revolutionize, underscore, shed light on, testament, holistic, enhance, cornerstone, in today's fast-paced world.
+7. NO COMPULSIVE SUMMARIES OR CLICHÉ TRANSITIONS: Never end with a generic wrap-up ('In summary,', 'Overall, this highlights...', 'Ultimately, ...'). Never use cliché transitions like 'That said,', 'In other words,', 'At the end of the day,', 'Here's the catch:'. When the thought ends, stop writing.
+8. NO VAGUE ATTRIBUTION: Avoid empty hedges ('It is important to note that', 'Some critics argue', 'It remains to be seen').
+9. EXTREME BURSTINESS & SENTENCE VARIETY: Wildly vary sentence lengths. Alternate 2-to-5 word punchy sentences/fragments ('Fair enough.', 'Hardly surprising.', 'It works.') with natural 18-to-26 word compound thoughts. Never write consecutive sentences of equal length.
+10. FACTGUARD INVARIANTS (100% INVIOLABLE): Strictly preserve every number, date, year, currency ($/€/£), percentage (%), proper name, and negative condition (not, never, cannot). Never drop, round, or alter any fact.
+11. STRICT FORMAT: Output ONLY the raw rewritten text. Absolutely NO conversational preambles ('Sure!', 'Here is a...'), NO quotation marks, and NO explanations."""
 
 def clean_model_output(text: str) -> str:
     """Strip any conversational preambles like 'Sure! Here is...' from LLM output."""
@@ -152,7 +154,7 @@ def enhance_burstiness(text: str, original_text: str) -> str:
     """
     Post-processing stylometric enhancer:
     Strips Wikipedia AI tells, residual AI tropes, injects natural rhythm markers,
-    and rigorously verifies FactGuard invariants before returning.
+    removes em-dashes and semicolons, and rigorously verifies FactGuard invariants before returning.
     """
     if not text:
         return text
@@ -164,7 +166,21 @@ def enhance_burstiness(text: str, original_text: str) -> str:
     # 1. Strip compulsive summaries at end
     enhanced = re.sub(r"\n*(?:In conclusion|In summary|Overall|Ultimately),.*$", "", enhanced, flags=re.IGNORECASE).strip()
     
-    # 2. Residual AI Tropes
+    # 2. Strip broken unicode characters and mangled dashes
+    enhanced = enhanced.replace("\ufffd", ", ")
+    enhanced = re.sub(r"\s*[—–]\s*", ", ", enhanced)
+    
+    # 3. Strip semicolons - convert to periods to drastically boost human perplexity / kill AI signature
+    enhanced = re.sub(r";\s*", ". ", enhanced)
+    
+    # 4. Remove negative parallelisms if any leaked through
+    enhanced = re.sub(r"\b(?:is|was|are|were|do|does|did)\s+not\s+(?:just|only)\s+([^,;]+)[,;]\s*(?:it's|it\s+is|they're|they\s+are|but\s+also|but)?\s*", r"\1 and ", enhanced, flags=re.IGNORECASE)
+    enhanced = re.sub(r"\bnot\s+just\s+([^,;]+)[,;]\s*(?:it's|it\s+is|but\s+also|but)?\s*", r"\1 along with ", enhanced, flags=re.IGNORECASE)
+
+    # 5. Remove cliché AI transitions
+    enhanced = re.sub(r"\b(?:In other words|That said|That being said|At the end of the day|Here's the catch[:!.]?|Here is the thing[:!.]?|To put it simply),?\s*", "", enhanced, flags=re.IGNORECASE)
+    
+    # 6. Residual AI Tropes
     residual_tropes = {
         r"\bin profound ways\b": "completely",
         r"\bplays a vital role in\b": "is key to",
@@ -182,6 +198,10 @@ def enhance_burstiness(text: str, original_text: str) -> str:
     }
     for pattern, replacement in residual_tropes.items():
         enhanced = re.sub(pattern, replacement, enhanced, flags=re.IGNORECASE)
+        
+    enhanced = re.sub(r"\s*,\s*,\s*", ", ", enhanced)
+    enhanced = re.sub(r"\s*\.\s*\.\s*", ". ", enhanced)
+    enhanced = re.sub(r"\s+", " ", enhanced).strip()
         
     # Check that no facts from original_text were broken by enhancement
     orig_facts = extract_fact_ledger(original_text)
@@ -204,6 +224,18 @@ class GeminiProvider(ModelProviderInterface):
             return HeuristicHumanizer().rewrite(text, tone, strength)
         
         url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={settings.GEMINI_API_KEY}"
+        
+        strength_val = (strength or "medium").lower()
+        if strength_val == "heavy":
+            temperature = 1.05
+            strength_desc = "Strength: Heavy (Aggressive structural overhaul, 0% verbatim n-gram overlap, extreme sentence length variation, zero dashes, zero semicolons)"
+        elif strength_val == "light":
+            temperature = 0.75
+            strength_desc = "Strength: Light (Gentle polish, natural cadence)"
+        else:
+            temperature = 0.95
+            strength_desc = "Strength: Medium (Balanced humanization, natural burstiness, zero cliché AI vocabulary)"
+
         few_shot_contents = [
             {
                 "role": "user",
@@ -211,7 +243,7 @@ class GeminiProvider(ModelProviderInterface):
             },
             {
                 "role": "model",
-                "parts": [{"text": "AI has completely upended the modern workplace—and it happened fast. Teams everywhere are leaning on machine learning to speed up clunky workflows and spark fresh ideas. But here's the catch: without a practical game plan, jumping headfirst into these tools usually causes more headaches than breakthroughs. In other words, you need a strategy, not just shiny software."}]
+                "parts": [{"text": "Work life shifted fast after automation arrived. Most companies now run machine learning across their daily routines, hoping to save hours and spark fresh ideas. It helps. Still, diving in without an actual plan usually leaves teams untangling messy software instead of getting ahead."}]
             },
             {
                 "role": "user",
@@ -219,11 +251,11 @@ class GeminiProvider(ModelProviderInterface):
             },
             {
                 "role": "model",
-                "parts": [{"text": "By September 30, 2025, revenue jumped 18.5% to hit $4.2 million. Solid numbers. Even so, leadership can't afford to get comfortable—market swings are still a very real threat."}]
+                "parts": [{"text": "Quarterly revenue climbed 18.5% to reach $4.2 million through September 30, 2025. Strong results. Yet leadership must watch sudden market swings closely as conditions shift."}]
             },
             {
                 "role": "user",
-                "parts": [{"text": f"Tone: {tone}\nStrength: {strength}\n\nOriginal Text:\n{text}"}]
+                "parts": [{"text": f"Tone: {tone}\n{strength_desc}\n\nOriginal Text:\n{text}"}]
             }
         ]
         
@@ -233,8 +265,8 @@ class GeminiProvider(ModelProviderInterface):
             },
             "contents": few_shot_contents,
             "generationConfig": {
-                "temperature": 0.9,
-                "topP": 0.95,
+                "temperature": temperature,
+                "topP": 0.92,
                 "maxOutputTokens": 1024
             }
         }
