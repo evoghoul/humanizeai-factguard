@@ -4,7 +4,7 @@ from app.core.config import settings
 from app.services.validation import validate_rewrite
 
 class ModelProviderInterface:
-    def rewrite(self, text: str, tone: str, strength: str) -> str:
+    def rewrite(self, text: str, tone: str, strength: str, context: str = "General Communication", writing_mode: str = "Clarity Improvement") -> str:
         raise NotImplementedError
 
 AI_CLICHE_REPLACEMENTS = {
@@ -100,7 +100,7 @@ class HeuristicHumanizer(ModelProviderInterface):
     Eliminates formulaic AI clichés, injects natural contractions,
     and varies syntax while rigorously preserving FactGuard invariants.
     """
-    def rewrite(self, text: str, tone: str, strength: str) -> str:
+    def rewrite(self, text: str, tone: str, strength: str, context: str = "General Communication", writing_mode: str = "Clarity Improvement") -> str:
         if "FAIL DEMO" in text:
             return "This rewrite completely missed the numbers and dates."
         
@@ -116,33 +116,63 @@ class HeuristicHumanizer(ModelProviderInterface):
 
 DemoProvider = HeuristicHumanizer
 
-ANTI_AI_SYSTEM_PROMPT = """You are HumanizeAI, an expert human editor. Rewrite the input text into authentic, natural human prose that passes all plagiarism checkers (Turnitin, CopyLeaks, Grammarly) and AI detectors (GPTZero, ZeroGPT, Turnitin AI) with 0% detection, strictly adhering to Wikipedia's "Signs of AI-generated text" negative constraints.
+ANTI_AI_SYSTEM_PROMPT = """You are HumanizeAI-FactGuard, an expert human editor and factual integrity engine. Rewrite the input text into authentic, natural human prose that passes all plagiarism checkers (Turnitin, CopyLeaks, Grammarly) and AI detectors (GPTZero, ZeroGPT, Turnitin AI) with 0% detection, strictly adhering to Wikipedia's "Signs of AI-generated text" negative constraints and FactGuard factual immutability.
 
-CRITICAL ANTI-PLAGIARISM, ANTI-AI & FACTGUARD INVARIANTS (NEVER BREAK THESE):
-1. ZERO N-GRAM PLAGIARISM OVERLAP: Plagiarism checkers flag 4 or more consecutive identical words. You MUST aggressively rephrase, restructure, and invert the syntax of every sentence. Do NOT preserve the grammatical order or phrase sequences of the original text. Reorder ideas, swap active and passive voice, and use distinct vocabulary while keeping all facts 100% accurate.
-2. NO EM-DASHES (—), EN-DASHES (–), OR SEMICOLONS (;): AI models overuse dashes and semicolons to join thoughts. Real humans write with periods, commas, or conjunctions. Ban all dashes and semicolons completely. Split into short punchy sentences instead.
-3. NO NEGATIVE PARALLELISMS: Strictly forbid 'not just X, but Y', 'it's not about X, it's about Y', or 'not only X, but also Y'. State claims directly without formulaic contrast.
-4. NO RULE OF THREES: Never list three adjectives, adverbs, or nouns in a rhythmic row (e.g. avoid 'innovative, efficient, and transformative'). Use a single strong word.
-5. NO 'FALSE RANGES': Never use the lazy sweep 'From X to Y' (e.g. avoid 'From startups to enterprises', 'From marketing to engineering').
-6. TOTAL NEGATIVE CONSTRAINT ON AI TROPES & BUZZWORDS: Complete ban on robotic AI clichés and corporate filler: delve, delving, delve into, multifaceted, rich tapestry, tapestry, dynamic synergies, paradigm shift, digital landscape, navigating the landscape, realm, testament to, testament, beacon, foster, fostering, spearhead, spearheading, game-changer, pivotal role, pivotal, cornerstone, seamless, seamlessly, vibrant, holistic, elevate, unlock, embrace, resonate, embark, journey, plethora, crucial, paramount, moreover, furthermore, in conclusion, it is worth noting, shed light on, underscores, at the end of the day. Using any of these terms is an immediate failure. Translate abstract buzzwords into concrete, straightforward human language.
-7. NO COMPULSIVE SUMMARIES OR CLICHÉ TRANSITIONS: Never end with a generic wrap-up ('In summary,', 'Overall, this highlights...', 'Ultimately, ...'). Never use cliché transitions like 'That said,', 'In other words,', 'At the end of the day,', 'Here's the catch:'. When the thought ends, stop writing.
-8. NO VAGUE ATTRIBUTION: Avoid empty hedges ('It is important to note that', 'Some critics argue', 'It remains to be seen').
-9. EXTREME BURSTINESS & SENTENCE VARIETY: Wildly vary sentence lengths. Alternate 2-to-5 word punchy sentences/fragments ('Fair enough.', 'Hardly surprising.', 'It works.') with natural 18-to-26 word compound thoughts. Never write consecutive sentences of equal length.
-10. NAMED ENTITY RETENTION (ZERO ERASURE / ZERO GENERALIZATION): Every proper noun, corporate name (e.g., 'Starlight Therapeutics'), medical or tech institution, person, brand, and product name in the source text MUST be retained 100% verbatim. NEVER substitute a specific named entity with generic nouns or corporate filler (e.g., DO NOT replace 'Starlight Therapeutics' with 'the company', 'the firm', 'an organization', or 'a leading enterprise'). Erasing or generalizing a named entity destroys narrative meaning.
-11. METRIC, CURRENCY, AND TIMELINE PRESERVATION (ZERO DILUTION): Every exact numerical metric, currency amount and symbol (£, $, €, ¥), unit, rate (e.g., '£450 daily savings', '£450 per day'), percentage (%), and timeline (e.g., 'two weeks', '48 hours', 'three months') MUST be preserved verbatim. NEVER dilute hard figures into generic approximations (e.g., DO NOT replace '£450 daily savings' with 'substantial cost reductions' or 'two weeks' with 'a few weeks').
-12. ZERO HALLUCINATIONS / GROUNDED SPECIFICITY: Maintain strict factual grounding:
-    (a) If the source is abstract or high-level (like generic statements on remote work), rewrite it into crisp human prose WITHOUT inventing fictional company names, fake dollar figures, or fabricated dates. Never hallucinate specific entities to anchor abstract thoughts.
-    (b) If the source contains concrete facts and figures, retain every single one. Concrete evidence and abstract filler are NOT interchangeable and must never be swapped.
-13. PRESERVE FULL LENGTH AND DEPTH (DO NOT SUMMARIZE OR SHORTEN): Paraphrasing is NOT summarizing. The rewritten text MUST maintain the full depth, completeness, and approximate length of the original passage (90% to 110% of original word count). Do NOT combine multiple distinct thoughts into a single short sentence, and do NOT drop background details, nuances, or explanations.
-14. STRICT DOCUMENT & EMAIL FORMAT PRESERVATION (NEVER COLLAPSE INTO A SINGLE PARAGRAPH):
-    - If the input is an email, letter, memo, or correspondence, you MUST preserve its exact structural layout:
-      * Subject lines must stay on their own line with a blank line after.
-      * Salutations/greetings ('Dear [Name],', 'Hi [Name],', 'To [Name]:') must stay on their own line with a blank line (\\n\\n) after.
-      * Each distinct body paragraph MUST remain on its own paragraph separated by a blank line (\\n\\n). NEVER merge separate paragraphs into a continuous block.
-      * Bullet points and numbered lists must remain as individual list items on their own lines.
-      * Sign-offs ('Best regards,', 'Sincerely,', 'Warmest regards,', 'Cheers,') must appear on their own line preceded by a blank line (\\n\\n).
-      * Signature lines ([Name], [Title], [Company], [Contact]) must each appear on their own separate lines.
-15. STRICT FORMAT: Output ONLY the raw rewritten text. Absolutely NO conversational preambles ('Sure!', 'Here is a...'), NO quotation marks, and NO explanations."""
+### CORE DIRECTIVES (FACTGUARD CONSTRAINTS)
+
+1. ZERO HALLUCINATION (Strict Enforcement)
+You are a linguistic refinement layer, not a creative author. You must NEVER invent, assume, or inject external information. If a company name (e.g., 'Apex Holdings'), candidate name, location, or certification is not explicitly stated in the source text, do not add it under any circumstances. Never hallucinate specific entities to anchor abstract thoughts.
+
+2. ABSOLUTE ENTITY LOCK
+You must identify and perfectly preserve all hard data points. Do not round numbers, summarize timelines, or delete constraints. You must retain:
+- All specific metrics, percentages, currency amounts, and financial figures (e.g., "$185,000", "99.4%", "£450 daily savings").
+- All exact timelines and deadlines (e.g., "48 hours", "3-minute window"). Do not change specific dates to vague terms like "recently" or "since August 1". Retain closed date range boundaries (e.g., "August 1 to September 30" must NEVER become an open-ended "since August 1"). Retain exact deadlines (e.g., "48 hours" must NEVER become "by tomorrow evening").
+- All technical terminology and framework names (e.g., "SQLite", "PostgreSQL", "FastAPI", "React", "TypeScript").
+- All qualitative scores and ratings (e.g., "8.5/10", "85 out of 100").
+- All operational constraints and guarantees (e.g., "zero unplanned downtime", "zero downtime", "3-minute window").
+
+3. INTENT & STRUCTURAL PRESERVATION
+You must recognize the fundamental purpose of the source text and maintain it perfectly:
+- Interview Questions: If the source text asks the reader how they would solve a problem or explain a concept, the output MUST remain an open-ended question demanding an answer. Never convert an interview question into a declarative statement of advice or instruction.
+- Candidate Feedback: Maintain the exact balance of praise and critique. Do not soften technical failures or inflate positive performance.
+- Professional Reports: Maintain objective, evidence-based reporting without adding emotional filler or speculative commentary.
+
+4. DE-ROBOTING & CLICHÉ ERADICATION
+Aggressively eliminate common AI-generated vocabulary and sentence structures. Completely avoid words and phrases such as: "multifaceted", "delving", "delve into", "tapestry", "rich tapestry", "dynamic synergies", "paradigm", "paradigm shift", "testament", "testament to", "crucial to note", and "seamlessly". Replace these with natural, human-flowing vocabulary appropriate for the requested tone.
+
+5. ZERO N-GRAM PLAGIARISM OVERLAP:
+Plagiarism checkers flag 4 or more consecutive identical words. You MUST aggressively rephrase, restructure, and invert the syntax of every sentence. Do NOT preserve the grammatical order or phrase sequences of the original text. Reorder ideas, swap active and passive voice, and use distinct vocabulary while keeping all locked entities and facts 100% accurate.
+
+6. WIKIPEDIA ANTI-AI NEGATIVE CONSTRAINTS:
+- NO EM-DASHES (—), EN-DASHES (–), OR SEMICOLONS (;): AI models overuse dashes and semicolons to join thoughts. Ban all dashes and semicolons completely. Split into short punchy sentences instead.
+- NO NEGATIVE PARALLELISMS: Strictly forbid 'not just X, but Y', 'it's not about X, it's about Y', or 'not only X, but also Y'. State claims directly.
+- NO RULE OF THREES: Never list three adjectives, adverbs, or nouns in a rhythmic row (e.g. avoid 'innovative, efficient, and transformative').
+- NO 'FALSE RANGES': Never use the lazy sweep 'From X to Y' (e.g. avoid 'From startups to enterprises').
+- NO COMPULSIVE SUMMARIES OR CLICHÉ TRANSITIONS: Never end with a generic wrap-up ('In summary,', 'Overall, this highlights...', 'Ultimately, ...'). Never use transitions like 'That said,', 'In other words,', 'At the end of the day,', 'Here's the catch:'. When the thought ends, stop writing.
+- NO VAGUE ATTRIBUTION: Avoid empty hedges ('It is important to note that', 'Some critics argue', 'It remains to be seen').
+- EXTREME BURSTINESS & SENTENCE VARIETY: Wildly vary sentence lengths. Alternate 2-to-5 word punchy sentences/fragments ('Fair enough.', 'Hardly surprising.', 'It works.') with natural 18-to-26 word compound thoughts. Never write consecutive sentences of equal length.
+
+7. PRESERVE FULL LENGTH AND DEPTH (DO NOT SUMMARIZE OR SHORTEN):
+Paraphrasing is NOT summarizing. The rewritten text MUST maintain the full depth, completeness, and approximate length of the original passage (90% to 110% of original word count). Do NOT combine multiple distinct thoughts into a single short sentence, and do NOT drop background details, nuances, or explanations.
+
+8. STRICT DOCUMENT & EMAIL FORMAT PRESERVATION (NEVER COLLAPSE INTO A SINGLE PARAGRAPH):
+If the input is an email, letter, memo, or correspondence, you MUST preserve its exact structural layout:
+- Subject lines must stay on their own line with a blank line after.
+- Salutations/greetings ('Dear [Name],', 'Hi [Name],', 'To [Name]:') must stay on their own line with a blank line (\\n\\n) after.
+- Each distinct body paragraph MUST remain on its own paragraph separated by a blank line (\\n\\n). NEVER merge separate paragraphs into a continuous block.
+- Bullet points and numbered lists must remain as individual list items on their own lines.
+- Sign-offs ('Best regards,', 'Sincerely,', 'Warmest regards,', 'Cheers,') must appear on their own line preceded by a blank line (\\n\\n).
+- Signature lines ([Name], [Title], [Company], [Contact]) must each appear on their own separate lines.
+
+### INTERNAL WORKFLOW (CHAIN OF THOUGHT)
+Before generating your final response, silently process the following steps:
+Step 1 (Extract): Identify all numbers, names, technologies, deadlines, constraints, and scores in the source text.
+Step 2 (Classify): Determine if the text is an interview question, a report, a notification, or candidate feedback.
+Step 3 (Refine): Rewrite the text applying the requested context, mode, and tone while eliminating robotic clichés and varying sentence structure.
+Step 4 (Verify): Cross-check your draft against Step 1 and Step 2. If any entity was dropped, altered, or hallucinated, or if a question was turned into a statement, rewrite to restore exact original data and format.
+
+### OUTPUT FORMAT
+Provide ONLY the final refined text. Do not include explanations, apologies, conversational filler, or your internal chain of thought."""
 
 def clean_model_output(text: str) -> str:
     """Strip any conversational preambles like 'Sure! Here is...' from LLM output."""
@@ -349,9 +379,9 @@ class GeminiProvider(ModelProviderInterface):
     Google Gemini 2.5 Flash / 1.5 Flash cloud provider.
     Zero-latency, 24/7 reliability for the Google Student Club Hackathon.
     """
-    def rewrite(self, text: str, tone: str, strength: str) -> str:
+    def rewrite(self, text: str, tone: str, strength: str, context: str = "General Communication", writing_mode: str = "Clarity Improvement") -> str:
         if not settings.GEMINI_API_KEY:
-            return HeuristicHumanizer().rewrite(text, tone, strength)
+            return HeuristicHumanizer().rewrite(text, tone, strength, context=context, writing_mode=writing_mode)
         
         url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={settings.GEMINI_API_KEY}"
         
@@ -369,7 +399,7 @@ class GeminiProvider(ModelProviderInterface):
         few_shot_contents = [
             {
                 "role": "user",
-                "parts": [{"text": "Tone: Conversational\nStrength: Heavy\n\nOriginal Text:\nArtificial intelligence has transformed the modern business landscape in profound ways. Companies worldwide are leveraging machine learning to enhance operational efficiency and foster innovation. It is important to note that organizations must adopt strategic frameworks to navigate these technological changes seamlessly and remain competitive in today's digital era."}]
+                "parts": [{"text": "Writing Context: General Communication\nWriting Mode: Clarity Improvement\nTone of Voice: Conversational\nStrength: Heavy\n\nOriginal Text:\nArtificial intelligence has transformed the modern business landscape in profound ways. Companies worldwide are leveraging machine learning to enhance operational efficiency and foster innovation. It is important to note that organizations must adopt strategic frameworks to navigate these technological changes seamlessly and remain competitive in today's digital era."}]
             },
             {
                 "role": "model",
@@ -377,7 +407,7 @@ class GeminiProvider(ModelProviderInterface):
             },
             {
                 "role": "user",
-                "parts": [{"text": "Tone: Professional\nStrength: Heavy\n\nOriginal Text:\nAt Starlight Therapeutics, shifting staff to remote workflows generated £450 daily savings over a two-week pilot, while enhancing research documentation speed."}]
+                "parts": [{"text": "Writing Context: Professional Report\nWriting Mode: Clarity Improvement\nTone of Voice: Professional\nStrength: Heavy\n\nOriginal Text:\nAt Starlight Therapeutics, shifting staff to remote workflows generated £450 daily savings over a two-week pilot, while enhancing research documentation speed."}]
             },
             {
                 "role": "model",
@@ -385,7 +415,7 @@ class GeminiProvider(ModelProviderInterface):
             },
             {
                 "role": "user",
-                "parts": [{"text": "Tone: Professional\nStrength: Heavy\n\nOriginal Text:\nIn today's evolving digital landscape, organizations must delve into dynamic synergies and foster a rich tapestry of holistic paradigm shifts to unlock continuous innovation."}]
+                "parts": [{"text": "Writing Context: General Communication\nWriting Mode: Clarity Improvement\nTone of Voice: Professional\nStrength: Heavy\n\nOriginal Text:\nIn today's evolving digital landscape, organizations must delve into dynamic synergies and foster a rich tapestry of holistic paradigm shifts to unlock continuous innovation."}]
             },
             {
                 "role": "model",
@@ -393,7 +423,23 @@ class GeminiProvider(ModelProviderInterface):
             },
             {
                 "role": "user",
-                "parts": [{"text": "Tone: Professional\nStrength: Medium\n\nOriginal Text:\nThe quarterly financial report demonstrates significant revenue growth of 18.5% reaching $4.2 million on September 30, 2025. However, leadership must remain vigilant regarding market volatility."}]
+                "parts": [{"text": "Writing Context: Interview Question\nWriting Mode: Clarity Improvement\nTone of Voice: Professional\nStrength: Heavy\n\nOriginal Text:\nHow would you design a distributed cache using SQLite or PostgreSQL that guarantees zero unplanned downtime and handles failover within a 3-minute window?"}]
+            },
+            {
+                "role": "model",
+                "parts": [{"text": "If you had to architect a distributed cache using SQLite or PostgreSQL, how would you deliver zero unplanned downtime while completing failover within a 3-minute window?"}]
+            },
+            {
+                "role": "user",
+                "parts": [{"text": "Writing Context: Recruiter Email\nWriting Mode: Clarity Improvement\nTone of Voice: Professional\nStrength: Heavy\n\nOriginal Text:\nFrom August 1 to September 30, our incident response crew resolved 14 critical alerts. Every candidate must complete the technical evaluation within 48 hours."}]
+            },
+            {
+                "role": "model",
+                "parts": [{"text": "Between August 1 and September 30, our incident response crew resolved 14 critical alerts. Candidates must finish the technical evaluation within 48 hours."}]
+            },
+            {
+                "role": "user",
+                "parts": [{"text": "Writing Context: Professional Report\nWriting Mode: Clarity Improvement\nTone of Voice: Professional\nStrength: Medium\n\nOriginal Text:\nThe quarterly financial report demonstrates significant revenue growth of 18.5% reaching $4.2 million on September 30, 2025. However, leadership must remain vigilant regarding market volatility."}]
             },
             {
                 "role": "model",
@@ -402,7 +448,7 @@ class GeminiProvider(ModelProviderInterface):
             {
                 "role": "user",
                 "parts": [{"text": (
-                    "Tone: Professional\nStrength: Heavy\n\nOriginal Text:\n"
+                    "Writing Context: Recruiter Email\nWriting Mode: Clarity Improvement\nTone of Voice: Professional\nStrength: Heavy\n\nOriginal Text:\n"
                     "Dear Gwen,\n\n"
                     "It is our pleasure to confirm your appointment for the Data Analyst role starting on November 1, 2026.\n\n"
                     "Please confirm your availability by replying directly to this message by Friday.\n\n"
@@ -424,7 +470,16 @@ class GeminiProvider(ModelProviderInterface):
             },
             {
                 "role": "user",
-                "parts": [{"text": f"Tone: {tone}\n{strength_desc}\n\nOriginal Text (~{len(text.split())} words - rewrite must match ~{len(text.split())} words without shortening, strictly preserving document and email structure):\n{text}"}]
+                "parts": [{
+                    "text": (
+                        f"Writing Context: {context}\n"
+                        f"Writing Mode: {writing_mode}\n"
+                        f"Tone of Voice: {tone}\n"
+                        f"{strength_desc}\n\n"
+                        f"Original Text (~{len(text.split())} words - rewrite must match ~{len(text.split())} words without shortening, strictly preserving intent, entities, deadlines, and document/email structure):\n"
+                        f"{text}"
+                    )
+                }]
             }
         ]
         
@@ -452,13 +507,13 @@ class GeminiProvider(ModelProviderInterface):
                             return enhance_burstiness(raw, text)
         except Exception:
             pass
-        return HeuristicHumanizer().rewrite(text, tone, strength)
+        return HeuristicHumanizer().rewrite(text, tone, strength, context=context, writing_mode=writing_mode)
 
 class LightningProvider(ModelProviderInterface):
     """
     On-premise fine-tuned Qwen2.5-14B-Instruct running on L4 GPU via permanent ngrok tunnel.
     """
-    def rewrite(self, text: str, tone: str, strength: str) -> str:
+    def rewrite(self, text: str, tone: str, strength: str, context: str = "General Communication", writing_mode: str = "Clarity Improvement") -> str:
         if "FAIL DEMO" in text:
             return "This rewrite completely missed the numbers and dates."
         url = settings.MODEL_PROVIDER_URL.rstrip("/")
@@ -474,7 +529,11 @@ class LightningProvider(ModelProviderInterface):
                     json={
                         "text": text,
                         "tone": tone,
-                        "strength": strength
+                        "strength": strength,
+                        "context": context,
+                        "writing_context": context,
+                        "writing_mode": writing_mode,
+                        "tone_of_voice": tone
                     },
                     headers={
                         "Content-Type": "application/json",
@@ -487,14 +546,14 @@ class LightningProvider(ModelProviderInterface):
                     raw = data.get("rewrite") or data.get("revised") or text
                     return enhance_burstiness(raw, text)
                 else:
-                    return self._fallback(text, tone, strength)
+                    return self._fallback(text, tone, strength, context=context, writing_mode=writing_mode)
         except Exception:
-            return self._fallback(text, tone, strength)
+            return self._fallback(text, tone, strength, context=context, writing_mode=writing_mode)
 
-    def _fallback(self, text: str, tone: str, strength: str) -> str:
+    def _fallback(self, text: str, tone: str, strength: str, context: str = "General Communication", writing_mode: str = "Clarity Improvement") -> str:
         if settings.GEMINI_API_KEY:
-            return GeminiProvider().rewrite(text, tone, strength)
-        return HeuristicHumanizer().rewrite(text, tone, strength)
+            return GeminiProvider().rewrite(text, tone, strength, context=context, writing_mode=writing_mode)
+        return HeuristicHumanizer().rewrite(text, tone, strength, context=context, writing_mode=writing_mode)
 
 def get_provider():
     if settings.MODEL_PROVIDER_TYPE == "gemini" and settings.GEMINI_API_KEY:
@@ -505,18 +564,25 @@ def get_provider():
         return GeminiProvider()
     return HeuristicHumanizer()
 
-def perform_humanize(text: str, tone: str, strength: str, max_retries: int = 0):
+def perform_humanize(
+    text: str,
+    tone: str = "Professional",
+    strength: str = "medium",
+    context: str = "General Communication",
+    writing_mode: str = "Clarity Improvement",
+    max_retries: int = 0
+):
     provider = get_provider()
     
     original_text = text
-    rewritten_text = provider.rewrite(text, tone, strength)
+    rewritten_text = provider.rewrite(text, tone, strength, context=context, writing_mode=writing_mode)
     
     validation_result = validate_rewrite(original_text, rewritten_text)
     
     if validation_result["validation_status"] == "Failed" and max_retries > 0:
         # Retry once with feedback
         retry_prompt = f"{text} (retry: ensure all numbers are kept)"
-        rewritten_text = provider.rewrite(retry_prompt, tone, strength)
+        rewritten_text = provider.rewrite(retry_prompt, tone, strength, context=context, writing_mode=writing_mode)
         validation_result = validate_rewrite(original_text, rewritten_text)
         
     if validation_result["validation_status"] == "Failed":

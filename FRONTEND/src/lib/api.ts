@@ -241,10 +241,20 @@ export async function humanizeText(
           ? "Light"
           : "Medium"
       const tone = options?.tone || "Professional"
+      const context = options?.context || "General Communication"
+      const writingMode = options?.writingMode || "Clarity Improvement"
 
       const requestBody = targetUrl.endsWith("/api/refine")
         ? { text: trimmed, options }
-        : { text: trimmed, tone, strength }
+        : {
+            text: trimmed,
+            tone,
+            strength,
+            context,
+            writing_context: context,
+            writing_mode: writingMode,
+            tone_of_voice: tone,
+          }
 
       const response = await fetch(targetUrl, {
         method: "POST",

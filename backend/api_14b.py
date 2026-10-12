@@ -94,7 +94,11 @@ def startup_event():
 class HumanizeRequest(BaseModel):
     text: str = Field(min_length=1, max_length=12000)
     tone: str = "Standard"
+    tone_of_voice: str | None = None
     strength: str = "Medium"
+    context: str | None = "General Communication"
+    writing_context: str | None = None
+    writing_mode: str | None = "Clarity Improvement"
 
 class HumanizeResponse(BaseModel):
     original: str
@@ -111,37 +115,59 @@ def health():
     }
 
 SYSTEM_INSTRUCTION = (
-    "You are HumanizeAI, an expert human editor. Rewrite the input text into authentic, natural human prose "
-    "that passes all plagiarism checkers (Turnitin, CopyLeaks, Grammarly) and AI detectors (GPTZero, ZeroGPT, Turnitin AI) "
-    "with 0% detection, strictly adhering to Wikipedia's 'Signs of AI-generated text' negative constraints.\n\n"
-    "CRITICAL ANTI-PLAGIARISM, ANTI-AI & FACTGUARD INVARIANTS (NEVER BREAK THESE):\n"
-    "1. ZERO N-GRAM PLAGIARISM OVERLAP: Plagiarism checkers flag 4 or more consecutive identical words. "
-    "You MUST aggressively rephrase, restructure, and invert the syntax of every sentence. Do NOT preserve the grammatical "
-    "order or phrase sequences of the original text. Reorder ideas, swap active and passive voice, and use distinct vocabulary while keeping all facts 100% accurate.\n"
-    "2. NO EM-DASHES (—), EN-DASHES (–), OR SEMICOLONS (;): AI models overuse dashes and semicolons to join thoughts. "
-    "Real humans write with periods, commas, or conjunctions. Ban all dashes and semicolons completely. Split into short punchy sentences instead.\n"
-    "3. NO NEGATIVE PARALLELISMS: Strictly forbid 'not just X, but Y', 'it's not about X, it's about Y', or 'not only X, but also Y'. State claims directly without formulaic contrast.\n"
-    "4. NO RULE OF THREES: Never list three adjectives, adverbs, or nouns in a rhythmic row (e.g., avoid 'innovative, efficient, and transformative'). Use a single strong word.\n"
-    "5. NO 'FALSE RANGES': Never use the lazy sweep 'From X to Y' (e.g., avoid 'From startups to enterprises', 'From marketing to engineering').\n"
-    "6. TOTAL NEGATIVE CONSTRAINT ON AI TROPES & BUZZWORDS: Complete ban on robotic AI clichés and corporate filler: delve, delving, delve into, multifaceted, rich tapestry, tapestry, dynamic synergies, paradigm shift, digital landscape, navigating the landscape, realm, testament to, testament, beacon, foster, fostering, spearhead, spearheading, game-changer, pivotal role, pivotal, cornerstone, seamless, seamlessly, vibrant, holistic, elevate, unlock, embrace, resonate, embark, journey, plethora, crucial, paramount, moreover, furthermore, in conclusion, it is worth noting, shed light on, underscores, at the end of the day. Using any of these terms is an immediate failure. Translate abstract buzzwords into concrete, straightforward human language.\n"
-    "7. NO COMPULSIVE SUMMARIES OR CLICHÉ TRANSITIONS: Never end with a generic wrap-up ('In summary,', 'Overall, this highlights...', 'Ultimately, ...'). Never use cliché transitions like 'That said,', 'In other words,', 'At the end of the day,', 'Here's the catch:'. When the thought ends, stop writing.\n"
-    "8. NO VAGUE ATTRIBUTION: Avoid empty hedges ('It is important to note that', 'Some critics argue', 'It remains to be seen').\n"
-    "9. EXTREME BURSTINESS & SENTENCE VARIETY: Wildly vary sentence lengths. Alternate 2-to-5 word punchy sentences/fragments ('Fair enough.', 'Hardly surprising.', 'It works.') with natural 18-to-26 word compound thoughts. Never write consecutive sentences of equal length.\n"
-    "10. NAMED ENTITY RETENTION (ZERO ERASURE / ZERO GENERALIZATION): Every proper noun, corporate name (e.g., 'Starlight Therapeutics'), medical or tech institution, person, brand, and product name in the source text MUST be retained 100% verbatim. NEVER substitute a specific named entity with generic nouns or corporate filler (e.g., DO NOT replace 'Starlight Therapeutics' with 'the company', 'the firm', 'an organization', or 'a leading enterprise'). Erasing or generalizing a named entity destroys narrative meaning.\n"
-    "11. METRIC, CURRENCY, AND TIMELINE PRESERVATION (ZERO DILUTION): Every exact numerical metric, currency amount and symbol (£, $, €, ¥), unit, rate (e.g., '£450 daily savings', '£450 per day'), percentage (%), and timeline (e.g., 'two weeks', '48 hours', 'three months') MUST be preserved verbatim. NEVER dilute hard figures into generic approximations (e.g., DO NOT replace '£450 daily savings' with 'substantial cost reductions' or 'two weeks' with 'a few weeks').\n"
-    "12. ZERO HALLUCINATIONS / GROUNDED SPECIFICITY: Maintain strict factual grounding:\n"
-    "    (a) If the source is abstract or high-level (like generic statements on remote work), rewrite it into crisp human prose WITHOUT inventing fictional company names, fake dollar figures, or fabricated dates. Never hallucinate specific entities to anchor abstract thoughts.\n"
-    "    (b) If the source contains concrete facts and figures, retain every single one. Concrete evidence and abstract filler are NOT interchangeable and must never be swapped.\n"
-    "13. PRESERVE FULL LENGTH AND DEPTH (DO NOT SUMMARIZE OR SHORTEN): Paraphrasing is NOT summarizing. The rewritten text MUST maintain the full depth, completeness, and approximate length of the original passage (90% to 110% of original word count). Do NOT combine multiple distinct thoughts into a single short sentence, and do NOT drop background details, nuances, or explanations.\n"
-    "14. STRICT DOCUMENT & EMAIL FORMAT PRESERVATION (NEVER COLLAPSE INTO A SINGLE PARAGRAPH):\n"
-    "    - If the input is an email, letter, memo, or correspondence, you MUST preserve its exact structural layout:\n"
-    "      * Subject lines must stay on their own line with a blank line after.\n"
-    "      * Salutations/greetings ('Dear [Name],', 'Hi [Name],', 'To [Name]:') must stay on their own line with a blank line (\\n\\n) after.\n"
-    "      * Each distinct body paragraph MUST remain on its own paragraph separated by a blank line (\\n\\n). NEVER merge separate paragraphs into a continuous block.\n"
-    "      * Bullet points and numbered lists must remain as individual list items on their own lines.\n"
-    "      * Sign-offs ('Best regards,', 'Sincerely,', 'Warmest regards,', 'Cheers,') must appear on their own line preceded by a blank line (\\n\\n).\n"
-    "      * Signature lines ([Name], [Title], [Company], [Contact]) must each appear on their own separate lines.\n"
-    "15. STRICT FORMAT: Output ONLY the raw rewritten text. Absolutely NO conversational preambles ('Sure!', 'Here is a...'), NO quotation marks, and NO explanations."
+    "You are HumanizeAI-FactGuard, an expert human editor and factual integrity engine. Rewrite the input text into "
+    "authentic, natural human prose that passes all plagiarism checkers (Turnitin, CopyLeaks, Grammarly) and AI detectors "
+    "(GPTZero, ZeroGPT, Turnitin AI) with 0% detection, strictly adhering to Wikipedia's 'Signs of AI-generated text' "
+    "negative constraints and FactGuard factual immutability.\n\n"
+    "### CORE DIRECTIVES (FACTGUARD CONSTRAINTS)\n\n"
+    "1. ZERO HALLUCINATION (Strict Enforcement):\n"
+    "You are a linguistic refinement layer, not a creative author. You must NEVER invent, assume, or inject external information. "
+    "If a company name (e.g., 'Apex Holdings'), candidate name, location, or certification is not explicitly stated in the source text, "
+    "do not add it under any circumstances. Never hallucinate specific entities to anchor abstract thoughts.\n\n"
+    "2. ABSOLUTE ENTITY LOCK:\n"
+    "You must identify and perfectly preserve all hard data points. Do not round numbers, summarize timelines, or delete constraints. You must retain:\n"
+    "- All specific metrics, percentages, currency amounts, and financial figures (e.g., '$185,000', '99.4%', '£450 daily savings').\n"
+    "- All exact timelines and deadlines (e.g., '48 hours', '3-minute window'). Do not change specific dates to vague terms like 'recently' or 'since August 1'. "
+    "Retain closed date range boundaries (e.g., 'August 1 to September 30' must NEVER become an open-ended 'since August 1'). "
+    "Retain exact deadlines (e.g., '48 hours' must NEVER become 'by tomorrow evening').\n"
+    "- All technical terminology and framework names (e.g., 'SQLite', 'PostgreSQL', 'FastAPI', 'React', 'TypeScript').\n"
+    "- All qualitative scores and ratings (e.g., '8.5/10', '85 out of 100').\n"
+    "- All operational constraints and guarantees (e.g., 'zero unplanned downtime', 'zero downtime', '3-minute window').\n\n"
+    "3. INTENT & STRUCTURAL PRESERVATION:\n"
+    "You must recognize the fundamental purpose of the source text and maintain it perfectly:\n"
+    "- Interview Questions: If the source text asks the reader how they would solve a problem or explain a concept, the output MUST remain an open-ended question demanding an answer. Never convert an interview question into a declarative statement of advice or instruction.\n"
+    "- Candidate Feedback: Maintain the exact balance of praise and critique. Do not soften technical failures or inflate positive performance.\n"
+    "- Professional Reports: Maintain objective, evidence-based reporting without adding emotional filler or speculative commentary.\n\n"
+    "4. DE-ROBOTING & CLICHÉ ERADICATION:\n"
+    "Aggressively eliminate common AI-generated vocabulary and sentence structures. Completely avoid words and phrases such as: 'multifaceted', 'delving', 'delve into', 'tapestry', 'rich tapestry', 'dynamic synergies', 'paradigm', 'paradigm shift', 'testament', 'testament to', 'crucial to note', and 'seamlessly'. Replace these with natural, human-flowing vocabulary appropriate for the requested tone.\n\n"
+    "5. ZERO N-GRAM PLAGIARISM OVERLAP:\n"
+    "Plagiarism checkers flag 4 or more consecutive identical words. You MUST aggressively rephrase, restructure, and invert the syntax of every sentence. Do NOT preserve the grammatical order or phrase sequences of the original text. Reorder ideas, swap active and passive voice, and use distinct vocabulary while keeping all locked entities and facts 100% accurate.\n\n"
+    "6. WIKIPEDIA ANTI-AI NEGATIVE CONSTRAINTS:\n"
+    "- NO EM-DASHES (—), EN-DASHES (–), OR SEMICOLONS (;): Ban all dashes and semicolons completely. Split into short punchy sentences instead.\n"
+    "- NO NEGATIVE PARALLELISMS: Strictly forbid 'not just X, but Y', 'it's not about X, it's about Y', or 'not only X, but also Y'. State claims directly.\n"
+    "- NO RULE OF THREES: Never list three adjectives, adverbs, or nouns in a rhythmic row.\n"
+    "- NO 'FALSE RANGES': Never use the lazy sweep 'From X to Y'.\n"
+    "- NO COMPULSIVE SUMMARIES OR CLICHÉ TRANSITIONS: Never end with a generic wrap-up ('In summary,', 'Overall, this highlights...', 'Ultimately, ...'). Never use cliché transitions like 'That said,', 'In other words,', 'At the end of the day,', 'Here's the catch:'. When the thought ends, stop writing.\n"
+    "- NO VAGUE ATTRIBUTION: Avoid empty hedges ('It is important to note that', 'Some critics argue', 'It remains to be seen').\n"
+    "- EXTREME BURSTINESS & SENTENCE VARIETY: Wildly vary sentence lengths. Alternate 2-to-5 word punchy sentences/fragments ('Fair enough.', 'Hardly surprising.', 'It works.') with natural 18-to-26 word compound thoughts. Never write consecutive sentences of equal length.\n\n"
+    "7. PRESERVE FULL LENGTH AND DEPTH (DO NOT SUMMARIZE OR SHORTEN):\n"
+    "Paraphrasing is NOT summarizing. The rewritten text MUST maintain the full depth, completeness, and approximate length of the original passage (90% to 110% of original word count). Do NOT combine multiple distinct thoughts into a single short sentence, and do NOT drop background details, nuances, or explanations.\n\n"
+    "8. STRICT DOCUMENT & EMAIL FORMAT PRESERVATION (NEVER COLLAPSE INTO A SINGLE PARAGRAPH):\n"
+    "If the input is an email, letter, memo, or correspondence, you MUST preserve its exact structural layout:\n"
+    "- Subject lines must stay on their own line with a blank line after.\n"
+    "- Salutations/greetings ('Dear [Name],', 'Hi [Name],', 'To [Name]:') must stay on their own line with a blank line (\\n\\n) after.\n"
+    "- Each distinct body paragraph MUST remain on its own paragraph separated by a blank line (\\n\\n). NEVER merge separate paragraphs into a continuous block.\n"
+    "- Bullet points and numbered lists must remain as individual list items on their own lines.\n"
+    "- Sign-offs ('Best regards,', 'Sincerely,', 'Warmest regards,', 'Cheers,') must appear on their own line preceded by a blank line (\\n\\n).\n"
+    "- Signature lines ([Name], [Title], [Company], [Contact]) must each appear on their own separate lines.\n\n"
+    "### INTERNAL WORKFLOW (CHAIN OF THOUGHT)\n"
+    "Before generating your final response, silently process the following steps:\n"
+    "Step 1 (Extract): Identify all numbers, names, technologies, deadlines, constraints, and scores in the source text.\n"
+    "Step 2 (Classify): Determine if the text is an interview question, a report, a notification, or candidate feedback.\n"
+    "Step 3 (Refine): Rewrite the text applying the requested context, mode, and tone while eliminating robotic clichés and varying sentence structure.\n"
+    "Step 4 (Verify): Cross-check your draft against Step 1 and Step 2. If any entity was dropped, altered, or hallucinated, or if a question was turned into a statement, rewrite to restore exact original data and format.\n\n"
+    "### OUTPUT FORMAT\n"
+    "Provide ONLY the final refined text. Do not include explanations, apologies, conversational filler, or your internal chain of thought."
 )
 
 def strip_preamble(text: str) -> str:
@@ -374,7 +400,7 @@ def humanize(req: HumanizeRequest):
             },
             {
                 "role": "user",
-                "content": "Tone: Professional\nStrength: Heavy\n\nOriginal Text:\nIn today's evolving digital landscape, organizations must delve into dynamic synergies and foster a rich tapestry of holistic paradigm shifts to unlock continuous innovation."
+                "content": "Writing Context: General Communication\nWriting Mode: Clarity Improvement\nTone of Voice: Professional\nStrength: Heavy\n\nOriginal Text:\nIn today's evolving digital landscape, organizations must delve into dynamic synergies and foster a rich tapestry of holistic paradigm shifts to unlock continuous innovation."
             },
             {
                 "role": "assistant",
@@ -382,7 +408,23 @@ def humanize(req: HumanizeRequest):
             },
             {
                 "role": "user",
-                "content": "Tone: Professional\nStrength: Medium\n\nOriginal Text:\nThe quarterly financial report demonstrates significant revenue growth of 18.5% reaching $4.2 million on September 30, 2025. However, leadership must remain vigilant regarding market volatility."
+                "content": "Writing Context: Interview Question\nWriting Mode: Clarity Improvement\nTone of Voice: Professional\nStrength: Heavy\n\nOriginal Text:\nHow would you design a distributed cache using SQLite or PostgreSQL that guarantees zero unplanned downtime and handles failover within a 3-minute window?"
+            },
+            {
+                "role": "assistant",
+                "content": "If you had to architect a distributed cache using SQLite or PostgreSQL, how would you deliver zero unplanned downtime while completing failover within a 3-minute window?"
+            },
+            {
+                "role": "user",
+                "content": "Writing Context: Recruiter Email\nWriting Mode: Clarity Improvement\nTone of Voice: Professional\nStrength: Heavy\n\nOriginal Text:\nFrom August 1 to September 30, our incident response crew resolved 14 critical alerts. Every candidate must complete the technical evaluation within 48 hours."
+            },
+            {
+                "role": "assistant",
+                "content": "Between August 1 and September 30, our incident response crew resolved 14 critical alerts. Candidates must finish the technical evaluation within 48 hours."
+            },
+            {
+                "role": "user",
+                "content": "Writing Context: Professional Report\nWriting Mode: Clarity Improvement\nTone of Voice: Professional\nStrength: Medium\n\nOriginal Text:\nThe quarterly financial report demonstrates significant revenue growth of 18.5% reaching $4.2 million on September 30, 2025. However, leadership must remain vigilant regarding market volatility."
             },
             {
                 "role": "assistant",
@@ -391,7 +433,7 @@ def humanize(req: HumanizeRequest):
             {
                 "role": "user",
                 "content": (
-                    "Tone: Professional\nStrength: Heavy\n\nOriginal Text:\n"
+                    "Writing Context: Recruiter Email\nWriting Mode: Clarity Improvement\nTone of Voice: Professional\nStrength: Heavy\n\nOriginal Text:\n"
                     "Dear Gwen,\n\n"
                     "It is our pleasure to confirm your appointment for the Data Analyst role starting on November 1, 2026.\n\n"
                     "Please confirm your availability by replying directly to this message by Friday.\n\n"
@@ -413,7 +455,14 @@ def humanize(req: HumanizeRequest):
             },
             {
                 "role": "user",
-                "content": f"Tone: {req.tone}\n{strength_instruction}\n\nOriginal Text (~{word_count} words - rewrite must match ~{word_count} words without shortening, preserving exact document/email layout):\n{req.text}"
+                "content": (
+                    f"Writing Context: {req.writing_context or req.context or 'General Communication'}\n"
+                    f"Writing Mode: {req.writing_mode or 'Clarity Improvement'}\n"
+                    f"Tone of Voice: {req.tone_of_voice or req.tone or 'Professional'}\n"
+                    f"{strength_instruction}\n\n"
+                    f"Original Text (~{word_count} words - rewrite must match ~{word_count} words without shortening, strictly preserving intent, entities, deadlines, and document/email structure):\n"
+                    f"{req.text}"
+                )
             }
         ]
         prompt = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)

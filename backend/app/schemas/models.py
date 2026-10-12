@@ -15,6 +15,9 @@ class HumanizeRequest(BaseModel):
     content_type: str = Field(..., pattern="^(recruiter feedback|candidate communication|interview questions|summaries)$")
     tone: str = Field(..., pattern="^(Professional|Polished|Conversational)$")
     strength: str = Field(..., pattern="^(light|medium|heavy)$")
+    context: Optional[str] = None
+    writing_context: Optional[str] = None
+    writing_mode: Optional[str] = None
 
 class FactLedger(BaseModel):
     names: List[str] = []
@@ -104,7 +107,11 @@ class RefineResponse(BaseModel):
 class HumanizeSimpleRequest(BaseModel):
     text: str = Field(min_length=1, max_length=10000)
     tone: Optional[str] = "Standard"
+    tone_of_voice: Optional[str] = None
     strength: Optional[str] = "Medium"
+    context: Optional[str] = "General Communication"
+    writing_context: Optional[str] = None
+    writing_mode: Optional[str] = "Clarity Improvement"
 
 class HumanizeSimpleResponse(BaseModel):
     original: str

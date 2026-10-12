@@ -37,7 +37,9 @@ def analyze_text(request: AnalyzeRequest):
 @router.post("/api/v1/humanize", response_model=HumanizeResponse)
 def humanize_text(request: HumanizeRequest):
     try:
-        result = perform_humanize(request.text, request.tone, request.strength)
+        context = request.writing_context or request.context or "General Communication"
+        mode = request.writing_mode or "Clarity Improvement"
+        result = perform_humanize(request.text, request.tone, request.strength, context=context, writing_mode=mode)
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -47,9 +49,11 @@ def humanize_simple(request: HumanizeSimpleRequest):
     if not request.text.strip():
         raise HTTPException(status_code=422, detail="Please provide non-empty text.")
     try:
-        tone = request.tone or "Professional"
+        tone = request.tone_of_voice or request.tone or "Professional"
         strength = request.strength or "Medium"
-        res = perform_humanize(request.text, tone, strength)
+        context = request.writing_context or request.context or "General Communication"
+        mode = request.writing_mode or "Clarity Improvement"
+        res = perform_humanize(request.text, tone, strength, context=context, writing_mode=mode)
         warnings = res.get("warnings", [])
         status = res.get("validation_status", "Passed")
         needs_review = status in ["Failed", "Review Recommended"] or len(warnings) > 0
@@ -91,8 +95,10 @@ def refine_text(request: RefineRequest):
             "heavy": "heavy"
         }
         strength = intensity_map.get((options.intensity or "balanced").lower(), "medium")
+        context = options.context or "General Communication"
+        mode = options.writingMode or "Clarity Improvement"
         
-        humanize_result = perform_humanize(request.text, tone, strength)
+        humanize_result = perform_humanize(request.text, tone, strength, context=context, writing_mode=mode)
         rewritten_text = humanize_result["rewritten_text"]
         
         analysis_result = analyze_robotic_language(request.text)

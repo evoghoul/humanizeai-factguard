@@ -12,11 +12,12 @@ TIMELINE_PATTERN = re.compile(
 NEGATION_PATTERN = re.compile(r'\b(?:not|never|neither|nor|no|cannot|can\'t|won\'t|didn\'t|doesn\'t|isn\'t|aren\'t|wasn\'t|weren\'t)\b', re.IGNORECASE)
 
 BANNED_AI_CLICHES = [
-    "rich tapestry", "dynamic synergies", "paradigm shift", "delve into", "delving into",
-    "delve", "delves", "multifaceted", "digital landscape", "navigating the landscape",
-    "tapestry", "testament to", "beacon of", "beacon", "foster", "fostering", "spearhead",
-    "spearheading", "game-changer", "pivotal role", "pivotal", "cornerstone", "seamlessly",
-    "in today's fast-paced world", "in today's digital era"
+    "rich tapestry", "dynamic synergies", "dynamic synergy", "paradigm shift", "paradigm shifts",
+    "delve into", "delving into", "delve", "delves", "multifaceted", "digital landscape",
+    "navigating the landscape", "the realm of", "tapestry", "testament to", "testament",
+    "beacon of", "beacon", "foster", "fostering", "spearhead", "spearheading",
+    "game-changer", "game-changing", "pivotal role", "pivotal", "cornerstone", "seamlessly",
+    "seamless", "crucial to note", "it is crucial to", "in today's fast-paced world", "in today's digital era"
 ]
 
 STOPWORDS = {
@@ -91,8 +92,93 @@ def check_hallucinations(original: str, rewritten: str) -> list[str]:
     for ent in rewr_ents:
         ent_lower = ent.lower()
         if ent_lower not in orig_lower and not any(part in orig_lower for part in ent_lower.split()):
-            # If original had no named entities, inventing one is a severe hallucination
+            # If original had no named entities or this specific entity is new, flag severe hallucination
             warnings.append(f"Potential hallucinated entity '{ent}' introduced without factual grounding.")
+    return warnings
+
+def check_intent_preservation(original: str, rewritten: str) -> list[str]:
+    """
+    Verifies that the structural purpose (such as open-ended interview questions)
+    is not altered into declarative statements or advice.
+    """
+    warnings = []
+    orig_trimmed = original.strip()
+    rewr_trimmed = rewritten.strip()
+    
+    is_orig_question = (
+        orig_trimmed.endswith("?") or
+        bool(re.search(r"\b(?:how would you|can you explain|what strategies|describe how|how do you|why would you|what approach)\b", orig_trimmed, re.IGNORECASE))
+    )
+    
+    if is_orig_question:
+        has_rewr_question = "?" in rewr_trimmed
+        if not has_rewr_question:
+            warnings.append("Intent drift: Source interview question was converted into declarative advice or statements.")
+    return warnings
+
+def check_timeline_boundaries(original: str, rewritten: str) -> list[str]:
+    """
+    Prevents timeline distortion where closed date ranges (e.g. 'August 1 to September 30')
+    are summarized into open-ended phrases (e.g. 'since August 1').
+    """
+    warnings = []
+    # Match patterns like: August 1 to September 30, from August 1 to September 30, between August 1 and September 30
+    closed_range_pattern = re.compile(
+        r'\b(?:(?:from|between)\s+)?([A-Z][a-z]+\s+\d{1,2}(?:,\s*\d{4})?)\s+(?:to|until|and|-)\s+([A-Z][a-z]+\s+\d{1,2}(?:,\s*\d{4})?)\b',
+        re.IGNORECASE
+    )
+    ranges = closed_range_pattern.findall(original)
+    rewr_lower = rewritten.lower()
+    
+    for start_d, end_d in ranges:
+        # Check if start and end dates survived
+        if start_d.lower() not in rewr_lower or end_d.lower() not in rewr_lower:
+            warnings.append(f"Timeline distortion: Closed date range ('{start_d} to {end_d}') was summarized or boundary omitted.")
+        # Check if rewritten turned closed range into "since <date>"
+        if re.search(rf"\bsince\s+{re.escape(start_d)}\b", rewritten, re.IGNORECASE):
+            warnings.append(f"Timeline distortion: Specific closed boundary ('{start_d} to {end_d}') was altered to an open-ended 'since {start_d}'.")
+    return warnings
+
+def check_exact_deadlines_and_constraints(original: str, rewritten: str) -> list[str]:
+    """
+    Preserves exact legal/HR deadlines (e.g. '48 hours'), operational windows (e.g. '3-minute window'),
+    system constraints (e.g. 'zero unplanned downtime'), scores (e.g. '8.5/10'), and technical frameworks.
+    """
+    warnings = []
+    rewr_lower = rewritten.lower()
+    
+    # 1. Exact hour deadlines: e.g. 48 hours, 24 hours, 72 hours
+    hour_deadlines = re.findall(r'\b\d+\s+hours?\b', original, re.IGNORECASE)
+    for dl in hour_deadlines:
+        dl_lower = dl.lower()
+        if dl_lower not in rewr_lower and dl_lower.replace(" ", "-") not in rewr_lower:
+            warnings.append(f"Deadline alteration: Strict deadline '{dl}' was altered or converted to a flexible timeframe.")
+            
+    # 2. Operational windows: e.g. 3-minute window, 5-minute window
+    window_matches = re.findall(r'\b\d+-minute(?:\s+window)?\b|\b\d+\s+minute(?:\s+window)?\b', original, re.IGNORECASE)
+    for win in window_matches:
+        win_norm = win.lower().replace("-", " ")
+        if win_norm not in rewr_lower.replace("-", " "):
+            warnings.append(f"Operational constraint '{win}' was omitted or modified.")
+            
+    # 3. System constraints: e.g. zero unplanned downtime, zero downtime
+    constraints = re.findall(r'\bzero\s+(?:unplanned\s+)?downtime\b', original, re.IGNORECASE)
+    for c in constraints:
+        if c.lower() not in rewr_lower:
+            warnings.append(f"Critical constraint '{c}' was omitted or modified.")
+            
+    # 4. Qualitative scores: e.g. 8.5/10, 85 out of 100
+    scores = re.findall(r'\b\d+(?:\.\d+)?/10\b|\b\d+\s+out\s+of\s+\d+\b', original, re.IGNORECASE)
+    for score in scores:
+        if score.lower() not in rewr_lower:
+            warnings.append(f"Qualitative score '{score}' was omitted or modified.")
+            
+    # 5. Technical frameworks: e.g. SQLite, PostgreSQL, FastAPI
+    tech_terms = re.findall(r'\b(?:SQLite|PostgreSQL|FastAPI|React|TypeScript|Docker|Kubernetes|Redis)\b', original)
+    for tech in tech_terms:
+        if tech.lower() not in rewr_lower:
+            warnings.append(f"Technical terminology '{tech}' was omitted.")
+            
     return warnings
 
 def check_ai_cliches(rewritten: str) -> list[str]:
@@ -109,6 +195,9 @@ def factguard_check(original: str, rewritten: str) -> dict:
     warnings.extend(check_years_and_timelines(original, rewritten))
     warnings.extend(check_negations(original, rewritten))
     warnings.extend(check_hallucinations(original, rewritten))
+    warnings.extend(check_intent_preservation(original, rewritten))
+    warnings.extend(check_timeline_boundaries(original, rewritten))
+    warnings.extend(check_exact_deadlines_and_constraints(original, rewritten))
     warnings.extend(check_ai_cliches(rewritten))
     
     needs_review = len(warnings) > 0

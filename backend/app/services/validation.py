@@ -71,13 +71,9 @@ def validate_rewrite(original_text: str, rewritten_text: str):
     ))
 
     # 7. AI Cliché / Buzzword Infiltration Check
-    banned_cliches = [
-        "rich tapestry", "dynamic synergies", "paradigm shift", "delve", "multifaceted",
-        "digital landscape", "tapestry", "testament to", "beacon", "foster", "fostering",
-        "spearhead", "game-changer", "pivotal", "cornerstone", "seamlessly"
-    ]
+    from factguard import BANNED_AI_CLICHES, check_intent_preservation, check_timeline_boundaries, check_exact_deadlines_and_constraints
     detected_cliches = [
-        c for c in banned_cliches if re.search(rf"\b{re.escape(c)}\b", rewritten_text, re.IGNORECASE)
+        c for c in BANNED_AI_CLICHES if re.search(rf"\b{re.escape(c)}\b", rewritten_text, re.IGNORECASE)
     ]
     cliche_status = "Failed" if detected_cliches else "Passed"
     checks.append(ValidationCheck(
@@ -86,7 +82,34 @@ def validate_rewrite(original_text: str, rewritten_text: str):
         details=f"Robotic AI clichés detected: {detected_cliches}" if detected_cliches else "Zero AI buzzwords or robotic tropes detected."
     ))
 
-    # 8. Deep Semantic Claim Check (Placeholder - heuristic audit)
+    # 8. Intent & Structural Preservation Check
+    intent_issues = check_intent_preservation(original_text, rewritten_text)
+    intent_status = "Failed" if intent_issues else "Passed"
+    checks.append(ValidationCheck(
+        name="Intent Preservation",
+        status=intent_status,
+        details="; ".join(intent_issues) if intent_issues else "Source structural intent (questions vs declarative) preserved."
+    ))
+
+    # 9. Timeline Boundary Preservation Check
+    boundary_issues = check_timeline_boundaries(original_text, rewritten_text)
+    boundary_status = "Failed" if boundary_issues else "Passed"
+    checks.append(ValidationCheck(
+        name="Timeline Boundaries",
+        status=boundary_status,
+        details="; ".join(boundary_issues) if boundary_issues else "Closed timeline boundaries preserved without open-ended summarization."
+    ))
+
+    # 10. Exact Deadlines & Constraints Lock
+    deadline_issues = check_exact_deadlines_and_constraints(original_text, rewritten_text)
+    deadline_status = "Failed" if deadline_issues else "Passed"
+    checks.append(ValidationCheck(
+        name="Deadlines & Constraints Lock",
+        status=deadline_status,
+        details="; ".join(deadline_issues) if deadline_issues else "All strict hour deadlines, operational windows, and constraints preserved."
+    ))
+
+    # 11. Deep Semantic Claim Check (Placeholder - heuristic audit)
     checks.append(ValidationCheck(
         name="Semantic Claims",
         status="Not Checked",
@@ -115,6 +138,12 @@ def validate_rewrite(original_text: str, rewritten_text: str):
         warnings.append(f"Hallucination detected: {', '.join(hallucinated_entities)} introduced without source grounding.")
     if detected_cliches:
         warnings.append(f"AI cliché penalty: {', '.join(detected_cliches)} detected in rewritten output.")
+    if intent_issues:
+        warnings.extend(intent_issues)
+    if boundary_issues:
+        warnings.extend(boundary_issues)
+    if deadline_issues:
+        warnings.extend(deadline_issues)
     if has_failed and not warnings:
         warnings.append("Some heuristic checks failed.")
     

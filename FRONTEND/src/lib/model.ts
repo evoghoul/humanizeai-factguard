@@ -128,10 +128,11 @@ export function extractListItems(text: string): string[] {
 }
 
 export const BANNED_AI_CLICHES = [
-  "rich tapestry", "dynamic synergies", "paradigm shift", "delve into", "delving into",
+  "rich tapestry", "dynamic synergies", "dynamic synergy", "paradigm shift", "delve into", "delving into",
   "delve", "multifaceted", "digital landscape", "navigating the landscape",
   "tapestry", "testament to", "beacon of", "beacon", "foster", "fostering", "spearhead",
-  "spearheading", "game-changer", "pivotal role", "pivotal", "cornerstone", "seamlessly"
+  "spearheading", "game-changer", "pivotal role", "pivotal", "cornerstone", "seamlessly",
+  "crucial to note", "it is crucial to"
 ] as const
 
 export function checkStructuralIntegrity(original: string, revised: string): StructuralCheck {
@@ -166,6 +167,30 @@ export function checkStructuralIntegrity(original: string, revised: string): Str
   if (!paragraphsPreserved) details.push("Paragraph structure was condensed compared to the original.")
   if (detectedCliches.length > 0) {
     details.push(`Banned robotic AI cliché detected: ${detectedCliches.join(", ")}.`)
+  }
+
+  // Intent preservation check (e.g. interview question converted to declarative advice)
+  const isQuestion = original.trim().endsWith("?") || /\b(?:how would you|can you explain|what strategies|describe how|how do you)\b/i.test(original.trim())
+  if (isQuestion && !revised.includes("?")) {
+    details.push("Intent drift: Source interview question was converted into declarative advice or statements.")
+  }
+
+  // Timeline boundary date check
+  const closedRangeMatch = original.match(/\b(?:(?:from|between)\s+)?([A-Z][a-z]+\s+\d{1,2}(?:,\s*\d{4})?)\s+(?:to|until|and|-)\s+([A-Z][a-z]+\s+\d{1,2}(?:,\s*\d{4})?)\b/i)
+  if (closedRangeMatch) {
+    const startD = closedRangeMatch[1]
+    const endD = closedRangeMatch[2]
+    if (!revised.toLowerCase().includes(startD.toLowerCase()) || !revised.toLowerCase().includes(endD.toLowerCase())) {
+      details.push(`Timeline distortion: Closed date range ('${startD} to ${endD}') was summarized or boundary omitted.`)
+    }
+  }
+
+  // Strict hour deadline check
+  const hourMatches = original.match(/\b\d+\s+hours?\b/gi) || []
+  for (const hm of hourMatches) {
+    if (!revised.toLowerCase().includes(hm.toLowerCase()) && !revised.toLowerCase().includes(hm.toLowerCase().replace(" ", "-"))) {
+      details.push(`Deadline alteration: Strict deadline '${hm}' was altered or converted to a flexible timeframe.`)
+    }
   }
 
   return {
