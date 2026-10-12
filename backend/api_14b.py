@@ -38,13 +38,22 @@ _device = None
 def get_model():
     global _model, _tokenizer, _device
     if _model is None:
+        import gc
+        gc.collect()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+            vram_gb = torch.cuda.get_device_properties(0).total_memory / (1024**3)
+            print(f"CUDA detected: {torch.cuda.get_device_name(0)} with {vram_gb:.1f} GB total VRAM")
+        else:
+            print("WARNING: CUDA is NOT available! Running on CPU (slow).")
+
         print("Loading 14B model + LoRA adapter...")
+        compute_dtype = torch.bfloat16 if (torch.cuda.is_available() and torch.cuda.is_bf16_supported()) else torch.float16
         bnb_config = BitsAndBytesConfig(
             load_in_4bit=True,
             bnb_4bit_quant_type="nf4",
-            bnb_4bit_compute_dtype=torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float16,
-            bnb_4bit_use_double_quant=True,
-            llm_int8_enable_fp32_cpu_offload=True
+            bnb_4bit_compute_dtype=compute_dtype,
+            bnb_4bit_use_double_quant=True
         )
         tok_path = ADAPTER_DIR if os.path.exists(ADAPTER_DIR) else BASE_MODEL
         print(f"Loading tokenizer from: {tok_path}")
@@ -58,6 +67,7 @@ def get_model():
             BASE_MODEL,
             quantization_config=bnb_config,
             device_map=device_map,
+            torch_dtype=compute_dtype,
             trust_remote_code=True
         )
         if os.path.exists(ADAPTER_DIR):
