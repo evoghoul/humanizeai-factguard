@@ -14,6 +14,18 @@ import re
 import json
 import glob
 from pathlib import Path
+from typing import Any
+
+# Optional libraries with type: ignore for clean local IDE inspection
+try:
+    import pandas as pd  # type: ignore
+except ImportError:
+    pd: Any = None  # type: ignore
+
+try:
+    from datasets import load_dataset  # type: ignore
+except ImportError:
+    load_dataset: Any = None  # type: ignore
 
 # Paths (works whether run from repo root or backend/)
 SCRIPT_DIR = Path(__file__).resolve().parent
@@ -111,11 +123,13 @@ def load_kaggle_samples(max_samples: int = 5000):
         print(f"[*] No CSV files found yet in {DATA_DIR} or ./data.")
         return samples
 
-    try:
-        import pandas as pd
-    except ImportError:
-        print("[!] pandas is not installed. Run: pip install pandas")
-        return samples
+    global pd
+    if pd is None:
+        try:
+            import pandas as pd  # type: ignore
+        except ImportError:
+            print("[!] pandas is not installed. Run: pip install pandas")
+            return samples
 
     for csv_path in csv_candidates:
         print(f"[*] Reading Kaggle CSV: {csv_path}")
@@ -162,8 +176,15 @@ def load_huggingface_paws(max_samples: int = 3000):
     """Loads Google PAWS dataset from Hugging Face for deep syntactic rewrites."""
     samples = []
     print("[*] Fetching Hugging Face PAWS dataset (google-research-datasets/paws)...")
+    global load_dataset
+    if load_dataset is None:
+        try:
+            from datasets import load_dataset  # type: ignore
+        except ImportError:
+            print("[*] Note: 'datasets' package not installed locally. Skipping PAWS download.")
+            return samples
+
     try:
-        from datasets import load_dataset
         ds = load_dataset("google-research-datasets/paws", "labeled_final", split="train")
         for item in ds:
             if item.get("label") == 1:
