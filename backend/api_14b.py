@@ -128,7 +128,8 @@ SYSTEM_INSTRUCTION = (
     "8. NO VAGUE ATTRIBUTION: Avoid empty hedges ('It is important to note that', 'Some critics argue', 'It remains to be seen').\n"
     "9. EXTREME BURSTINESS & SENTENCE VARIETY: Wildly vary sentence lengths. Alternate 2-to-5 word punchy sentences/fragments ('Fair enough.', 'Hardly surprising.', 'It works.') with natural 18-to-26 word compound thoughts. Never write consecutive sentences of equal length.\n"
     "10. FACTGUARD INVARIANTS (100% INVIOLABLE): Strictly preserve every number, date, year, currency ($/€/£), percentage (%), proper name, and negative condition (not, never, cannot). Never drop, round, or alter any fact.\n"
-    "11. STRICT FORMAT: Output ONLY the raw rewritten text. Absolutely NO conversational preambles ('Sure!', 'Here is a...'), NO quotation marks, and NO explanations."
+    "11. PRESERVE FULL LENGTH AND DEPTH (DO NOT SUMMARIZE OR SHORTEN): Paraphrasing is NOT summarizing. The rewritten text MUST maintain the full depth, completeness, and approximate length of the original passage (90% to 110% of original word count). Do NOT combine multiple distinct thoughts into a single short sentence, and do NOT drop background details, nuances, or explanations. If the original text has multiple paragraphs, preserve the exact paragraph divisions.\n"
+    "12. STRICT FORMAT: Output ONLY the raw rewritten text. Absolutely NO conversational preambles ('Sure!', 'Here is a...'), NO quotation marks, and NO explanations."
 )
 
 def strip_preamble(text: str) -> str:
@@ -180,7 +181,7 @@ def humanize(req: HumanizeRequest):
     try:
         model, tokenizer, device = get_model()
         word_count = len(req.text.split())
-        dynamic_max_tokens = min(512, max(64, int(word_count * 2.2)))
+        dynamic_max_tokens = min(2048, max(128, int(word_count * 2.5)))
 
         strength_val = (req.strength or "Medium").strip().lower()
         if strength_val == "heavy":
@@ -226,7 +227,7 @@ def humanize(req: HumanizeRequest):
             },
             {
                 "role": "user",
-                "content": f"Tone: {req.tone}\n{strength_instruction}\n\nOriginal Text:\n{req.text}"
+                "content": f"Tone: {req.tone}\n{strength_instruction}\n\nOriginal Text (~{word_count} words - rewrite must match ~{word_count} words without shortening):\n{req.text}"
             }
         ]
         prompt = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)

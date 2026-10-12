@@ -129,7 +129,8 @@ CRITICAL ANTI-PLAGIARISM & ANTI-AI NEGATIVE CONSTRAINTS (NEVER BREAK THESE):
 8. NO VAGUE ATTRIBUTION: Avoid empty hedges ('It is important to note that', 'Some critics argue', 'It remains to be seen').
 9. EXTREME BURSTINESS & SENTENCE VARIETY: Wildly vary sentence lengths. Alternate 2-to-5 word punchy sentences/fragments ('Fair enough.', 'Hardly surprising.', 'It works.') with natural 18-to-26 word compound thoughts. Never write consecutive sentences of equal length.
 10. FACTGUARD INVARIANTS (100% INVIOLABLE): Strictly preserve every number, date, year, currency ($/€/£), percentage (%), proper name, and negative condition (not, never, cannot). Never drop, round, or alter any fact.
-11. STRICT FORMAT: Output ONLY the raw rewritten text. Absolutely NO conversational preambles ('Sure!', 'Here is a...'), NO quotation marks, and NO explanations."""
+11. PRESERVE FULL LENGTH AND DEPTH (DO NOT SUMMARIZE OR SHORTEN): Paraphrasing is NOT summarizing. The rewritten text MUST maintain the full depth, completeness, and approximate length of the original passage (90% to 110% of original word count). Do NOT combine multiple distinct thoughts into a single short sentence, and do NOT drop background details, nuances, or explanations. If the original text has multiple paragraphs, preserve the exact paragraph divisions.
+12. STRICT FORMAT: Output ONLY the raw rewritten text. Absolutely NO conversational preambles ('Sure!', 'Here is a...'), NO quotation marks, and NO explanations."""
 
 def clean_model_output(text: str) -> str:
     """Strip any conversational preambles like 'Sure! Here is...' from LLM output."""
@@ -255,7 +256,7 @@ class GeminiProvider(ModelProviderInterface):
             },
             {
                 "role": "user",
-                "parts": [{"text": f"Tone: {tone}\n{strength_desc}\n\nOriginal Text:\n{text}"}]
+                "parts": [{"text": f"Tone: {tone}\n{strength_desc}\n\nOriginal Text (~{len(text.split())} words - rewrite must match ~{len(text.split())} words without shortening):\n{text}"}]
             }
         ]
         
@@ -267,7 +268,7 @@ class GeminiProvider(ModelProviderInterface):
             "generationConfig": {
                 "temperature": temperature,
                 "topP": 0.92,
-                "maxOutputTokens": 1024
+                "maxOutputTokens": 2048
             }
         }
         try:
