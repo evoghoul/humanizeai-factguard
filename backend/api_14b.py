@@ -267,6 +267,108 @@ def humanize(req: HumanizeRequest):
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
+class AudienceSplitReq(BaseModel):
+    text: str = Field(min_length=1, max_length=12000)
+    context: str = "Candidate Interview"
+
+class AudienceOut(BaseModel):
+    title: str
+    audience: str
+    tone: str
+    text: str
+    warnings: list[str] = []
+
+class AudienceSplitResp(BaseModel):
+    original_text: str
+    candidate: AudienceOut
+    hiring_manager: AudienceOut
+    compliance: AudienceOut
+    verification_status: str = "CONTENT INTEGRITY PASSED"
+    timestamp: str = ""
+
+@app.post("/split", response_model=AudienceSplitResp)
+def split_endpoint(req: AudienceSplitReq):
+    if not req.text.strip():
+        raise HTTPException(status_code=422, detail="Please provide non-empty interview notes.")
+    try:
+        model, tokenizer, device = get_model()
+        from datetime import datetime, timezone
+
+        def generate_audience(instruction_prompt: str, user_prompt: str) -> str:
+            msgs = [
+                {"role": "system", "content": instruction_prompt},
+                {"role": "user", "content": user_prompt}
+            ]
+            p = tokenizer.apply_chat_template(msgs, tokenize=False, add_generation_prompt=True)
+            inp = tokenizer(p, return_tensors="pt").to(device)
+            with torch.no_grad():
+                out = model.generate(
+                    **inp,
+                    max_new_tokens=512,
+                    do_sample=True,
+                    temperature=0.75,
+                    top_p=0.92,
+                    repetition_penalty=1.12,
+                    pad_token_id=tokenizer.pad_token_id or tokenizer.eos_token_id
+                )
+            raw = tokenizer.decode(out[0][inp.input_ids.shape[1]:], skip_special_tokens=True).strip()
+            return clean_wikipedia_ai_tells(raw)
+
+        # 1. Candidate email
+        cand_text = generate_audience(
+            "You are an empathetic HR Talent Partner. Transform raw interview notes into an encouraging, professional, and warm follow-up email directly to the candidate. Thank them, highlight strengths, outline next steps without revealing internal evaluation rubrics. Preserve exact dates and facts. Output ONLY the email.",
+            f"Raw Notes:\n{req.text}"
+        )
+        # 2. Hiring manager memo
+        mgr_text = generate_audience(
+            "You are an Executive Recruiting Lead. Transform raw interview notes into a direct, bulleted decision memo for the Hiring Manager. Sections: Recommendation Status, Key Strengths (pros), Watchouts / Discussion Areas (cons), and Candidate Comp / Experience. Zero fluff. Preserve 100% of numbers, dates, and metrics. Output ONLY the memo.",
+            f"Raw Notes:\n{req.text}"
+        )
+        # 3. Compliance record
+        comp_text = generate_audience(
+            "You are an HR Compliance and ATS Audit Officer. Transform raw interview notes into a formal, objective audit summary for the ATS record. Record evaluation dates, verified credentials, evaluation scores, and compensation expectation with neutral objectivity. 100% preservation of all numbers and dates. Output ONLY the record.",
+            f"Raw Notes:\n{req.text}"
+        )
+
+        fg_cand = factguard_check(req.text, cand_text)
+        fg_mgr = factguard_check(req.text, mgr_text)
+        fg_comp = factguard_check(req.text, comp_text)
+
+        status = "CONTENT INTEGRITY PASSED"
+        if any(fg.get("needs_review") for fg in [fg_cand, fg_mgr, fg_comp]):
+            status = "REVIEW RECOMMENDED"
+
+        return AudienceSplitResp(
+            original_text=req.text,
+            candidate=AudienceOut(
+                title="Candidate-Facing Follow-Up",
+                audience="Candidate",
+                tone="Encouraging & Constructive",
+                text=cand_text,
+                warnings=fg_cand.get("warnings", [])
+            ),
+            hiring_manager=AudienceOut(
+                title="Hiring Manager Decision Memo",
+                audience="Hiring Manager",
+                tone="Direct & Actionable (Pros/Cons)",
+                text=mgr_text,
+                warnings=fg_mgr.get("warnings", [])
+            ),
+            compliance=AudienceOut(
+                title="ATS & Compliance Record",
+                audience="ATS / Compliance Archive",
+                tone="Formal & Objective Audit Log",
+                text=comp_text,
+                warnings=fg_comp.get("warnings", [])
+            ),
+            verification_status=status,
+            timestamp=datetime.now(timezone.utc).isoformat()
+        )
+    except Exception as e:
+        print(f"Error during /split: {e}")
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)

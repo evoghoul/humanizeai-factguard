@@ -7,10 +7,12 @@ from app.schemas.models import (
     ValidateRequest, ValidateResponse,
     RefineRequest, RefineResponse, RefineFinding, RefineChange,
     RefineStructuralCheck, RefineVerification, RefineOptions,
-    HumanizeSimpleRequest, HumanizeSimpleResponse
+    HumanizeSimpleRequest, HumanizeSimpleResponse,
+    AudienceSplitRequest, AudienceSplitResponse
 )
 from app.services.analysis import analyze_robotic_language
 from app.services.rewrite import perform_humanize
+from app.services.splitter import perform_audience_split
 from app.services.validation import validate_rewrite
 from app.core.config import settings
 
@@ -174,4 +176,14 @@ def refine_text(request: RefineRequest):
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/api/v1/split", response_model=AudienceSplitResponse)
+@router.post("/split", response_model=AudienceSplitResponse)
+def split_audience_text(request: AudienceSplitRequest):
+    if not request.text.strip():
+        raise HTTPException(status_code=422, detail="Please provide non-empty interview notes.")
+    try:
+        return perform_audience_split(request.text, request.context or "Candidate Interview")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Audience splitting failed: {str(e)}")
 

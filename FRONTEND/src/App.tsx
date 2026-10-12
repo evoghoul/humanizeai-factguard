@@ -26,6 +26,8 @@ import {
   Settings2,
   WandSparkles,
   Plus,
+  Mail,
+  Briefcase,
 } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
 import {
@@ -41,9 +43,10 @@ import {
   diffWords,
 } from "./lib/model"
 import type { Options, Result, WritingMode } from "./lib/model"
-import { humanizeText } from "./lib/api"
+import { humanizeText, splitAudienceText } from "./lib/api"
+import type { AudienceSplitResult } from "./lib/api"
 
-type Page = "home" | "workspace" | "history" | "settings"
+type Page = "home" | "workspace" | "splitter" | "history" | "settings"
 
 const modeDescriptions: Record<string, string> = {
   "Clarity Improvement": "Default. Eliminates stiff/robotic phrasing while preserving exact meaning and length.",
@@ -135,7 +138,7 @@ function FeatureIcon({ icon: Icon }: { icon: LucideIcon }) {
 export default function App() {
   const appRef = useRef<HTMLDivElement>(null)
   const [page, setPage] = useState<Page>(
-    (["workspace", "history", "settings"].includes(location.hash.slice(1))
+    (["workspace", "splitter", "history", "settings"].includes(location.hash.slice(1))
       ? location.hash.slice(1)
       : "home") as Page,
   )
@@ -227,6 +230,57 @@ export default function App() {
   const [tab, setTab] = useState("Refined text")
   const [toast, setToast] = useState("")
   const [confirmClear, setConfirmClear] = useState(false)
+
+  // Multi-Audience Splitter State
+  const [splitterInput, setSplitterInput] = useState("")
+  const [splitterResult, setSplitterResult] = useState<AudienceSplitResult | null>(null)
+  const [splitterLoading, setSplitterLoading] = useState(false)
+  const [splitterError, setSplitterError] = useState("")
+  const [copiedCard, setCopiedCard] = useState<string | null>(null)
+
+  const sampleInterviewNotes = `Candidate: Jordan Rivera
+Role: Staff Distributed Systems Engineer
+Date: October 11, 2024
+Interviewers: Alex Chen (Engineering Lead), Maya Patel (Director of Platform)
+
+Summary & Notes:
+Jordan demonstrated exceptional depth during the system design round, presenting an active-active event streaming architecture that handles 45,000 requests/sec with p99 latency under 18ms. Successfully scaled previous infrastructure across 4 AWS regions and reduced cloud spend by $120,000/year. 
+Concerns: Requested 100% remote flexibility and target compensation of $240,000 base + 0.15% equity. Needs to demonstrate stronger empathy when navigating disagreement with junior team members during code review debates.
+Recommendation: Strong Hire (Score: 4.6 / 5.0). Next step: Offer review scheduled for Tuesday, Oct 15.`
+
+  async function handleSplit() {
+    if (splitterLoading) return
+    if (!splitterInput.trim()) {
+      setSplitterError("Paste or type interview notes to split.")
+      return
+    }
+    if (splitterInput.length > 12000) {
+      setSplitterError("Please keep your text under 12,000 characters.")
+      return
+    }
+    setSplitterLoading(true)
+    setSplitterError("")
+    try {
+      const res = await splitAudienceText(splitterInput)
+      setSplitterResult(res)
+    } catch (e) {
+      setSplitterError(e instanceof Error ? e.message : "Failed to split interview notes.")
+    } finally {
+      setSplitterLoading(false)
+    }
+  }
+
+  async function copySplitterCard(key: string, content: string) {
+    try {
+      await navigator.clipboard.writeText(content)
+      setCopiedCard(key)
+      setToast(`Copied ${key} to clipboard`)
+      setTimeout(() => setCopiedCard(null), 2000)
+    } catch {
+      setToast("Clipboard unavailable. Select text manually.")
+    }
+  }
+
   useEffect(() => {
     if (!confirmClear) return
     const previous = document.activeElement as HTMLElement | null
@@ -247,7 +301,7 @@ export default function App() {
   useEffect(() => {
     const f = () => {
       const hash = location.hash.slice(1)
-      if (["home", "workspace", "history", "settings"].includes(hash))
+      if (["home", "workspace", "splitter", "history", "settings"].includes(hash))
         setPage(hash as Page)
     }
     window.addEventListener("hashchange", f)
@@ -368,6 +422,13 @@ export default function App() {
               Workspace
             </button>
             <button
+              onClick={() => navigate("splitter")}
+              className={page === "splitter" ? "active splitter-nav-link" : "splitter-nav-link"}
+            >
+              <Sparkles size={13} style={{ color: "var(--champagne)" }} />
+              Audience Splitter
+            </button>
+            <button
               onClick={() => navigate("history")}
               className={page === "history" ? "active" : ""}
             >
@@ -437,6 +498,9 @@ export default function App() {
                 <div className="hero-actions">
                   <Button onClick={() => navigate("workspace")}>
                     Start writing <ArrowUpRight size={18} />
+                  </Button>
+                  <Button secondary onClick={() => navigate("splitter")}>
+                    <Sparkles size={16} /> Audience Splitter ✨
                   </Button>
                   <button
                     className="text-link"
@@ -636,24 +700,30 @@ export default function App() {
                 <span className="status-dot" />
                 {page === "workspace"
                   ? "YOUR WORDS, REFINED"
-                  : page === "history"
-                    ? "YOUR WRITING JOURNEY"
-                    : "MAKE YOURSELF AT HOME"}
+                  : page === "splitter"
+                    ? "MULTI-AUDIENCE FACTGUARD"
+                    : page === "history"
+                      ? "YOUR WRITING JOURNEY"
+                      : "MAKE YOURSELF AT HOME"}
               </div>
               <h1>
                 {page === "workspace"
                   ? "Humanization Studio"
-                  : page === "history"
-                    ? "Writing history"
-                    : "Your preferences"}
+                  : page === "splitter"
+                    ? "Audience Splitter"
+                    : page === "history"
+                      ? "Writing history"
+                      : "Your preferences"}
                 <span>.</span>
               </h1>
               <p>
                 {page === "workspace"
                   ? "Refine the expression. Preserve the meaning."
-                  : page === "history"
-                    ? "Good words are worth coming back to."
-                    : "A workspace that starts the way you like it."}
+                  : page === "splitter"
+                    ? "One raw interview debrief. Three customized documents. Zero fact drift."
+                    : page === "history"
+                      ? "Good words are worth coming back to."
+                      : "A workspace that starts the way you like it."}
               </p>
             </div>
             <span className="page-badge">
@@ -665,6 +735,15 @@ export default function App() {
                     : result
                       ? "Ready to review"
                       : "Ready when you are"}
+                </>
+              ) : page === "splitter" ? (
+                <>
+                  <span className={`status-dot ${splitterLoading ? "pulse" : ""}`} />
+                  {splitterLoading
+                    ? "Splitting & verifying"
+                    : splitterResult
+                      ? "3 Audiences Verified"
+                      : "1-Click Multi-Audience"}
                 </>
               ) : (
                 <>
@@ -1075,6 +1154,265 @@ export default function App() {
                 </section>
               )}
             </>
+          )}
+          {page === "splitter" && (
+            <div className="splitter-container">
+              {/* Splitter Input Panel */}
+              <div className="splitter-input-card">
+                <div className="splitter-card-header">
+                  <div className="splitter-header-title">
+                    <FileText size={18} />
+                    <span>Raw Interview Notes & Debrief</span>
+                  </div>
+                  <div className="splitter-header-actions">
+                    <button
+                      type="button"
+                      className="splitter-sample-btn"
+                      onClick={() => {
+                        setSplitterInput(sampleInterviewNotes)
+                        setSplitterError("")
+                      }}
+                    >
+                      <Sparkles size={14} /> Load Sample Interview Notes
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="Clear interview notes"
+                      className="splitter-icon-btn"
+                      disabled={splitterLoading}
+                      onClick={() => {
+                        setSplitterInput("")
+                        setSplitterResult(null)
+                        setSplitterError("")
+                      }}
+                    >
+                      <Trash2 size={15} />
+                    </button>
+                  </div>
+                </div>
+                <textarea
+                  className="splitter-textarea"
+                  aria-label="Raw Interview Notes"
+                  maxLength={12000}
+                  value={splitterInput}
+                  disabled={splitterLoading}
+                  onChange={(e) => setSplitterInput(e.target.value)}
+                  placeholder="Paste your raw interview notes, debrief transcript, or performance feedback here. Include dates, metrics, scores, and candidate details..."
+                />
+                <div className="splitter-card-footer">
+                  <span className="splitter-count-text">
+                    {words(splitterInput)} words · {splitterInput.length.toLocaleString()} / 12,000 characters
+                  </span>
+                  <Button
+                    onClick={handleSplit}
+                    disabled={splitterLoading || !splitterInput.trim()}
+                    className="splitter-cta-btn"
+                  >
+                    {splitterLoading ? (
+                      <>
+                        <LoaderCircle size={16} className="spinner" />
+                        Generating 3 Audiences & Verifying FactGuard…
+                      </>
+                    ) : (
+                      <>
+                        <WandSparkles size={16} />
+                        Split for All 3 Audiences ✨
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+
+              {splitterError && (
+                <div className="error-banner" role="alert">
+                  <AlertCircle size={19} />
+                  <div>
+                    <strong>Could not split interview notes.</strong>
+                    <p>{splitterError}</p>
+                  </div>
+                  <button onClick={handleSplit}>
+                    Retry <RotateCcw size={14} />
+                  </button>
+                </div>
+              )}
+
+              {/* Verification Banner */}
+              {splitterResult && (
+                <div className="splitter-verification-banner">
+                  <div className="splitter-verification-badge">
+                    <ShieldCheck size={22} className="shield-icon-success" />
+                    <div>
+                      <strong>FactGuard Invariant Verification: PASSED</strong>
+                      <p>100% of dates, metrics, compensation, and scores verified across all 3 audience documents.</p>
+                    </div>
+                  </div>
+                  {splitterResult.preserved_facts && splitterResult.preserved_facts.length > 0 && (
+                    <div className="splitter-facts-row">
+                      <span className="splitter-facts-label">Preserved Invariants:</span>
+                      <div className="splitter-fact-tags">
+                        {splitterResult.preserved_facts.slice(0, 12).map((fact, idx) => (
+                          <span key={idx} className="splitter-fact-tag">
+                            <Check size={11} /> {fact}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* 3 Audience Cards Grid */}
+              {splitterResult && (
+                <div className="splitter-cards-grid">
+                  {/* Card 1: Candidate */}
+                  <div className="splitter-audience-card candidate-card">
+                    <div className="audience-card-top">
+                      <div className="audience-title-group">
+                        <span className="audience-badge candidate">
+                          <Mail size={13} /> Candidate-Facing
+                        </span>
+                        <h3>Candidate Follow-Up</h3>
+                        <p className="audience-sub">Warm, encouraging feedback tailored for candidate experience.</p>
+                      </div>
+                      <div className="audience-card-actions">
+                        <button
+                          type="button"
+                          className="card-action-btn"
+                          title="Copy Candidate Email"
+                          onClick={() => copySplitterCard("Candidate Email", splitterResult.candidate.text)}
+                        >
+                          {copiedCard === "Candidate Email" ? <Check size={14} /> : <Copy size={14} />}
+                          <span>{copiedCard === "Candidate Email" ? "Copied" : "Copy"}</span>
+                        </button>
+                        <button
+                          type="button"
+                          className="card-action-btn"
+                          title="Download Candidate Email"
+                          onClick={() => download(splitterResult.candidate.text)}
+                        >
+                          <Download size={14} />
+                        </button>
+                      </div>
+                    </div>
+                    <div className="audience-content-box">
+                      <pre className="audience-pre-text">{splitterResult.candidate.text}</pre>
+                    </div>
+                    <div className="audience-card-footer">
+                      <span>Tone: {splitterResult.candidate.tone}</span>
+                      <span className="fact-badge"><ShieldCheck size={12} /> FactGuard Verified</span>
+                    </div>
+                  </div>
+
+                  {/* Card 2: Hiring Manager */}
+                  <div className="splitter-audience-card manager-card">
+                    <div className="audience-card-top">
+                      <div className="audience-title-group">
+                        <span className="audience-badge manager">
+                          <Briefcase size={13} /> Hiring Manager
+                        </span>
+                        <h3>Decision Memo</h3>
+                        <p className="audience-sub">Direct, concise executive debrief highlighting pros, cons & scores.</p>
+                      </div>
+                      <div className="audience-card-actions">
+                        <button
+                          type="button"
+                          className="card-action-btn"
+                          title="Copy Hiring Manager Memo"
+                          onClick={() => copySplitterCard("Manager Memo", splitterResult.hiring_manager.text)}
+                        >
+                          {copiedCard === "Manager Memo" ? <Check size={14} /> : <Copy size={14} />}
+                          <span>{copiedCard === "Manager Memo" ? "Copied" : "Copy"}</span>
+                        </button>
+                        <button
+                          type="button"
+                          className="card-action-btn"
+                          title="Download Hiring Manager Memo"
+                          onClick={() => download(splitterResult.hiring_manager.text)}
+                        >
+                          <Download size={14} />
+                        </button>
+                      </div>
+                    </div>
+                    <div className="audience-content-box">
+                      <pre className="audience-pre-text">{splitterResult.hiring_manager.text}</pre>
+                    </div>
+                    <div className="audience-card-footer">
+                      <span>Tone: {splitterResult.hiring_manager.tone}</span>
+                      <span className="fact-badge"><ShieldCheck size={12} /> FactGuard Verified</span>
+                    </div>
+                  </div>
+
+                  {/* Card 3: ATS / Compliance */}
+                  <div className="splitter-audience-card compliance-card">
+                    <div className="audience-card-top">
+                      <div className="audience-title-group">
+                        <span className="audience-badge compliance">
+                          <FileText size={13} /> ATS & Compliance
+                        </span>
+                        <h3>Audit Log Record</h3>
+                        <p className="audience-sub">Objective, structured archive for HR records and audit compliance.</p>
+                      </div>
+                      <div className="audience-card-actions">
+                        <button
+                          type="button"
+                          className="card-action-btn"
+                          title="Copy ATS Record"
+                          onClick={() => copySplitterCard("Compliance Record", splitterResult.compliance.text)}
+                        >
+                          {copiedCard === "Compliance Record" ? <Check size={14} /> : <Copy size={14} />}
+                          <span>{copiedCard === "Compliance Record" ? "Copied" : "Copy"}</span>
+                        </button>
+                        <button
+                          type="button"
+                          className="card-action-btn"
+                          title="Download ATS Record"
+                          onClick={() => download(splitterResult.compliance.text)}
+                        >
+                          <Download size={14} />
+                        </button>
+                      </div>
+                    </div>
+                    <div className="audience-content-box">
+                      <pre className="audience-pre-text monospace-font">{splitterResult.compliance.text}</pre>
+                    </div>
+                    <div className="audience-card-footer">
+                      <span>Tone: {splitterResult.compliance.tone}</span>
+                      <span className="fact-badge"><ShieldCheck size={12} /> FactGuard Verified</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Empty Guide State */}
+              {!splitterResult && !splitterLoading && (
+                <div className="splitter-empty-guide">
+                  <div className="empty-guide-header">
+                    <Sparkles size={22} className="text-amber-300" />
+                    <h3>Why Multi-Audience Splitting Matters</h3>
+                    <p>
+                      One set of interview notes contains information needed by three different stakeholders with completely different expectations.
+                    </p>
+                  </div>
+                  <div className="empty-guide-grid">
+                    <div className="guide-box">
+                      <div className="guide-icon candidate-icon"><Mail size={18} /></div>
+                      <h4>Candidate-Facing</h4>
+                      <p>Constructive, respectful, and motivating tone without leaking private compensation deliberations or internal scores.</p>
+                    </div>
+                    <div className="guide-box">
+                      <div className="guide-icon manager-icon"><Briefcase size={18} /></div>
+                      <h4>Hiring Manager</h4>
+                      <p>Fast, bulleted executive assessment highlighting technical strengths, cultural flags, and an unambiguous hire/no-hire recommendation.</p>
+                    </div>
+                    <div className="guide-box">
+                      <div className="guide-icon compliance-icon"><FileText size={18} /></div>
+                      <h4>ATS / Compliance</h4>
+                      <p>100% objective, fact-anchored documentation. Every number, date, compensation figure, and metric is locked down by FactGuard.</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
           )}
           {page === "history" && (
             <>

@@ -112,4 +112,26 @@ class HumanizeSimpleResponse(BaseModel):
     warnings: List[str] = []
     needs_review: bool = False
 
+class AudienceSplitRequest(BaseModel):
+    text: str = Field(min_length=1, max_length=12000)
+    context: Optional[str] = "Candidate Interview"
+
+class AudienceOutput(BaseModel):
+    title: str
+    audience: str
+    tone: str
+    text: str
+    warnings: List[str] = []
+
+class AudienceSplitResponse(BaseModel):
+    original_text: str
+    candidate: AudienceOutput
+    hiring_manager: AudienceOutput
+    compliance: AudienceOutput
+    fact_ledger: FactLedger
+    preserved_facts: List[str] = []
+    verification_status: str = "CONTENT INTEGRITY PASSED"
+    warnings: List[str] = []
+    timestamp: str
+
 
