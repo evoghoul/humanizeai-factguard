@@ -129,8 +129,16 @@ CRITICAL ANTI-PLAGIARISM & ANTI-AI NEGATIVE CONSTRAINTS (NEVER BREAK THESE):
 8. NO VAGUE ATTRIBUTION: Avoid empty hedges ('It is important to note that', 'Some critics argue', 'It remains to be seen').
 9. EXTREME BURSTINESS & SENTENCE VARIETY: Wildly vary sentence lengths. Alternate 2-to-5 word punchy sentences/fragments ('Fair enough.', 'Hardly surprising.', 'It works.') with natural 18-to-26 word compound thoughts. Never write consecutive sentences of equal length.
 10. FACTGUARD INVARIANTS (100% INVIOLABLE): Strictly preserve every number, date, year, currency ($/€/£), percentage (%), proper name, and negative condition (not, never, cannot). Never drop, round, or alter any fact.
-11. PRESERVE FULL LENGTH AND DEPTH (DO NOT SUMMARIZE OR SHORTEN): Paraphrasing is NOT summarizing. The rewritten text MUST maintain the full depth, completeness, and approximate length of the original passage (90% to 110% of original word count). Do NOT combine multiple distinct thoughts into a single short sentence, and do NOT drop background details, nuances, or explanations. If the original text has multiple paragraphs, preserve the exact paragraph divisions.
-12. STRICT FORMAT: Output ONLY the raw rewritten text. Absolutely NO conversational preambles ('Sure!', 'Here is a...'), NO quotation marks, and NO explanations."""
+11. PRESERVE FULL LENGTH AND DEPTH (DO NOT SUMMARIZE OR SHORTEN): Paraphrasing is NOT summarizing. The rewritten text MUST maintain the full depth, completeness, and approximate length of the original passage (90% to 110% of original word count). Do NOT combine multiple distinct thoughts into a single short sentence, and do NOT drop background details, nuances, or explanations.
+12. STRICT DOCUMENT & EMAIL FORMAT PRESERVATION (NEVER COLLAPSE INTO A SINGLE PARAGRAPH):
+    - If the input is an email, letter, memo, or correspondence, you MUST preserve its exact structural layout:
+      * Subject lines must stay on their own line with a blank line after.
+      * Salutations/greetings ('Dear [Name],', 'Hi [Name],', 'To [Name]:') must stay on their own line with a blank line (\\n\\n) after.
+      * Each distinct body paragraph MUST remain on its own paragraph separated by a blank line (\\n\\n). NEVER merge separate paragraphs into a continuous block.
+      * Bullet points and numbered lists must remain as individual list items on their own lines.
+      * Sign-offs ('Best regards,', 'Sincerely,', 'Warmest regards,', 'Cheers,') must appear on their own line preceded by a blank line (\\n\\n).
+      * Signature lines ([Name], [Title], [Company], [Contact]) must each appear on their own separate lines.
+13. STRICT FORMAT: Output ONLY the raw rewritten text. Absolutely NO conversational preambles ('Sure!', 'Here is a...'), NO quotation marks, and NO explanations."""
 
 def clean_model_output(text: str) -> str:
     """Strip any conversational preambles like 'Sure! Here is...' from LLM output."""
@@ -151,11 +159,104 @@ def clean_model_output(text: str) -> str:
     )
     return cleaned.strip()
 
+def restore_email_and_letter_formatting(text: str, original_text: str = "") -> str:
+    if not text:
+        return text
+
+    formatted = text.strip()
+    formatted = formatted.replace("\r\n", "\n").replace("\r", "\n")
+
+    # 1. Subject lines
+    formatted = re.sub(r"^(Subject:[^\n]+?)(?:\s*\n|\s+)(?=[A-Z])", r"\1\n\n", formatted, flags=re.IGNORECASE)
+
+    # 2. Salutations
+    salutation_pattern = r"^((?:Dear|Hi|Hello|Hey|To|Good morning|Good afternoon)\s+[^,\n:]{1,50}[,:]\s*)(?!\n)"
+    match = re.match(salutation_pattern, formatted, flags=re.IGNORECASE)
+    if match:
+        salutation = match.group(1).rstrip()
+        rest = formatted[len(match.group(1)):].lstrip()
+        formatted = f"{salutation}\n\n{rest}"
+
+    # 3. Sign-offs
+    signoff_words = (
+        r"Warmest regards|Warm regards|Best regards|Kind regards|With regards|Best wishes|"
+        r"Sincerely|Yours truly|Regards|Cheers|Thanks|Thank you|Respectfully"
+    )
+    signoff_regex = rf"(?<=\S)[^\S\r\n]*\b((?:{signoff_words})[,:]?)\s*"
+    formatted = re.sub(signoff_regex, r"\n\n\1\n", formatted, flags=re.IGNORECASE)
+
+    # 4. Signature block lines
+    def clean_sig_block(m):
+        full = m.group(0)
+        full = re.sub(r"(\[[^\]]+\])[^\S\r\n]+(\[[^\]]+\])", r"\1\n\2", full)
+        full = re.sub(r"(\*\*[^*]+\*\*)[^\S\r\n]+(\[[^\]]+\])", r"\1\n\2", full)
+        full = re.sub(r"(\*\*[^*]+\*\*)[^\S\r\n]+([A-Z])", r"\1\n\2", full)
+        return full
+
+    formatted = re.sub(
+        rf"\n(?:{signoff_words})[,:]?\n[\s\S]+$",
+        clean_sig_block,
+        formatted,
+        flags=re.IGNORECASE
+    )
+
+    # 5. Multi-paragraph restoration if original was multi-paragraph
+    if original_text:
+        orig_norm = original_text.replace("\r\n", "\n").replace("\r", "\n").strip()
+        orig_paras = [p.strip() for p in re.split(r"\n\s*\n", orig_norm) if p.strip()]
+        if len(orig_paras) >= 2:
+            current_paras = [p.strip() for p in re.split(r"\n\s*\n", formatted) if p.strip()]
+            if len(current_paras) < len(orig_paras):
+                has_salutation = bool(re.match(r"^(?:Dear|Hi|Hello|Hey|To|Good morning|Good afternoon)\s+[^,\n:]{1,50}[,:]", current_paras[0], flags=re.IGNORECASE))
+                has_signoff = bool(re.search(rf"\b(?:{signoff_words})[,:]?", current_paras[-1], flags=re.IGNORECASE))
+                
+                salutation_chunk = current_paras[0] if has_salutation else ""
+                signoff_chunk = current_paras[-1] if has_signoff and (len(current_paras) > 1 or not has_salutation) else ""
+                
+                body_start = 1 if has_salutation else 0
+                body_end = len(current_paras) - 1 if (has_signoff and len(current_paras) > 1) else len(current_paras)
+                body_chunks = current_paras[body_start:body_end]
+                body_text = " ".join(body_chunks)
+                
+                orig_body_count = len(orig_paras)
+                if has_salutation and re.match(r"^(?:Dear|Hi|Hello|Hey|To)\s+[^,\n:]{1,50}[,:]", orig_paras[0], flags=re.IGNORECASE):
+                    orig_body_count -= 1
+                if has_signoff and re.search(rf"\b(?:{signoff_words})[,:]?", orig_paras[-1], flags=re.IGNORECASE):
+                    orig_body_count -= 1
+                orig_body_count = max(1, orig_body_count)
+
+                sentences = re.split(r"(?<=[.!?])\s+(?=[A-Z0-9])", body_text)
+                if len(sentences) >= orig_body_count and orig_body_count > 1:
+                    k, m_rem = divmod(len(sentences), orig_body_count)
+                    new_body_paras = []
+                    idx = 0
+                    for i in range(orig_body_count):
+                        take = k + (1 if i < m_rem else 0)
+                        para = " ".join(sentences[idx:idx+take])
+                        if para:
+                            new_body_paras.append(para)
+                        idx += take
+                    
+                    parts = []
+                    if salutation_chunk:
+                        parts.append(salutation_chunk)
+                    parts.extend(new_body_paras)
+                    if signoff_chunk:
+                        parts.append(signoff_chunk)
+                    formatted = "\n\n".join(parts)
+
+    # 6. Normalize horizontal spaces WITHOUT destroying newlines
+    formatted = re.sub(r"[^\S\r\n]+", " ", formatted)
+    formatted = re.sub(r"[^\S\r\n]*\n[^\S\r\n]*", "\n", formatted)
+    formatted = re.sub(r"\n{3,}", "\n\n", formatted)
+
+    return formatted.strip()
+
 def enhance_burstiness(text: str, original_text: str) -> str:
     """
     Post-processing stylometric enhancer:
     Strips Wikipedia AI tells, residual AI tropes, injects natural rhythm markers,
-    removes em-dashes and semicolons, and rigorously verifies FactGuard invariants before returning.
+    removes em-dashes and semicolons, preserves layout, and rigorously verifies FactGuard invariants before returning.
     """
     if not text:
         return text
@@ -200,18 +301,20 @@ def enhance_burstiness(text: str, original_text: str) -> str:
     for pattern, replacement in residual_tropes.items():
         enhanced = re.sub(pattern, replacement, enhanced, flags=re.IGNORECASE)
         
-    enhanced = re.sub(r"\s*,\s*,\s*", ", ", enhanced)
-    enhanced = re.sub(r"\s*\.\s*\.\s*", ". ", enhanced)
-    enhanced = re.sub(r"\s+", " ", enhanced).strip()
+    enhanced = re.sub(r"[^\S\r\n]*,[^\S\r\n]*,[^\S\r\n]*", ", ", enhanced)
+    enhanced = re.sub(r"[^\S\r\n]*\.[^\S\r\n]*\.[^\S\r\n]*", ". ", enhanced)
+
+    # CRITICAL: Preserve all document/email formatting (never use re.sub(r'\s+', ' ', enhanced))
+    enhanced = restore_email_and_letter_formatting(enhanced, original_text=original_text)
         
     # Check that no facts from original_text were broken by enhancement
     orig_facts = extract_fact_ledger(original_text)
     for n in orig_facts.numbers:
         if n not in enhanced:
-            return cleaned
+            return restore_email_and_letter_formatting(cleaned, original_text=original_text)
     for d in orig_facts.dates:
         if d not in enhanced:
-            return cleaned
+            return restore_email_and_letter_formatting(cleaned, original_text=original_text)
             
     return enhanced
 
@@ -256,7 +359,30 @@ class GeminiProvider(ModelProviderInterface):
             },
             {
                 "role": "user",
-                "parts": [{"text": f"Tone: {tone}\n{strength_desc}\n\nOriginal Text (~{len(text.split())} words - rewrite must match ~{len(text.split())} words without shortening):\n{text}"}]
+                "parts": [{"text": (
+                    "Tone: Professional\nStrength: Heavy\n\nOriginal Text:\n"
+                    "Dear Gwen,\n\n"
+                    "It is our pleasure to confirm your appointment for the Data Analyst role starting on November 1, 2026.\n\n"
+                    "Please confirm your availability by replying directly to this message by Friday.\n\n"
+                    "Best regards,\n"
+                    "HR Operations\n"
+                    "[Company Name]"
+                )}]
+            },
+            {
+                "role": "model",
+                "parts": [{"text": (
+                    "Dear Gwen,\n\n"
+                    "We are thrilled to welcome you to the Data Analyst position, with your start date set for November 1, 2026.\n\n"
+                    "Kindly reply to this email by Friday to confirm that you are ready to begin.\n\n"
+                    "Best regards,\n"
+                    "HR Operations\n"
+                    "[Company Name]"
+                )}]
+            },
+            {
+                "role": "user",
+                "parts": [{"text": f"Tone: {tone}\n{strength_desc}\n\nOriginal Text (~{len(text.split())} words - rewrite must match ~{len(text.split())} words without shortening, strictly preserving document and email structure):\n{text}"}]
             }
         ]
         

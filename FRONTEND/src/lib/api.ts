@@ -16,6 +16,98 @@ export interface HumanizeFastApiResponse {
 export interface RefineApiResponse extends Result {}
 
 /**
+ * Ensures emails, letters, and multi-paragraph documents strictly preserve their
+ * structural layout, salutations, paragraph separations, sign-offs, and signature blocks.
+ */
+export function restoreEmailAndLetterFormatting(text: string, originalText = ""): string {
+  if (!text) return text
+
+  let formatted = text.trim().replace(/\r\n/g, "\n").replace(/\r/g, "\n")
+
+  // 1. Subject line at start
+  formatted = formatted.replace(/^(Subject:[^\n]+?)(?:\s*\n|\s+)(?=[A-Z])/i, "$1\n\n")
+
+  // 2. Salutations at start
+  const salutationMatch = formatted.match(/^((?:Dear|Hi|Hello|Hey|To|Good morning|Good afternoon)\s+[^,\n:]{1,50}[,:]\s*)(?!\n)/i)
+  if (salutationMatch) {
+    const salutation = salutationMatch[1].trimEnd()
+    const rest = formatted.slice(salutationMatch[1].length).trimStart()
+    formatted = `${salutation}\n\n${rest}`
+  }
+
+  // 3. Sign-offs preceded by \n\n and followed by \n
+  const signoffWords = "Warmest regards|Warm regards|Best regards|Kind regards|With regards|Best wishes|Sincerely|Yours truly|Regards|Cheers|Thanks|Thank you|Respectfully"
+  const signoffRegex = new RegExp(`(?<=\\S)[^\\S\\r\\n]*\\b((?:${signoffWords})[,:]?)\\s*`, "gi")
+  formatted = formatted.replace(signoffRegex, "\n\n$1\n")
+
+  // 4. Signature block lines (break bracketed or bold items into individual lines)
+  const blockRegex = new RegExp(`\\n(?:${signoffWords})[,:]?\\n[\\s\\S]+$`, "i")
+  formatted = formatted.replace(blockRegex, (full) => {
+    return full
+      .replace(/(\[[^\]]+\])[^\S\r\n]+(\[[^\]]+\])/g, "$1\n$2")
+      .replace(/(\*\*[^*]+\*\*)[^\S\r\n]+(\[[^\]]+\])/g, "$1\n$2")
+      .replace(/(\*\*[^*]+\*\*)[^\S\r\n]+([A-Z])/g, "$1\n$2")
+  })
+
+  // 5. Multi-paragraph restoration if original had multiple paragraphs
+  if (originalText) {
+    const origNorm = originalText.replace(/\r\n/g, "\n").replace(/\r/g, "\n").trim()
+    const origParas = origNorm.split(/\n\s*\n/).map((p) => p.trim()).filter((p) => p.length > 0)
+    if (origParas.length >= 2) {
+      const currentParas = formatted.split(/\n\s*\n/).map((p) => p.trim()).filter((p) => p.length > 0)
+      if (currentParas.length < origParas.length) {
+        const hasSalutation = /^(?:Dear|Hi|Hello|Hey|To|Good morning|Good afternoon)\s+[^,\n:]{1,50}[,:]/i.test(currentParas[0])
+        const hasSignoff = new RegExp(`\\b(?:${signoffWords})[,:]?`, "i").test(currentParas[currentParas.length - 1])
+
+        const salutationChunk = hasSalutation ? currentParas[0] : ""
+        const signoffChunk = hasSignoff && (currentParas.length > 1 || !hasSalutation) ? currentParas[currentParas.length - 1] : ""
+
+        const bodyStart = hasSalutation ? 1 : 0
+        const bodyEnd = hasSignoff && currentParas.length > 1 ? currentParas.length - 1 : currentParas.length
+        const bodyChunks = currentParas.slice(bodyStart, bodyEnd)
+        const bodyText = bodyChunks.join(" ")
+
+        let origBodyCount = origParas.length
+        if (hasSalutation && /^(?:Dear|Hi|Hello|Hey|To)\s+[^,\n:]{1,50}[,:]/i.test(origParas[0])) {
+          origBodyCount -= 1
+        }
+        if (hasSignoff && new RegExp(`\\b(?:${signoffWords})[,:]?`, "i").test(origParas[origParas.length - 1])) {
+          origBodyCount -= 1
+        }
+        origBodyCount = Math.max(1, origBodyCount)
+
+        const sentences = bodyText.split(/(?<=[.!?])\s+(?=[A-Z0-9])/).map((s) => s.trim()).filter((s) => s.length > 0)
+        if (sentences.length >= origBodyCount && origBodyCount > 1) {
+          const k = Math.floor(sentences.length / origBodyCount)
+          const mRem = sentences.length % origBodyCount
+          const newBodyParas: string[] = []
+          let idx = 0
+          for (let i = 0; i < origBodyCount; i++) {
+            const take = k + (i < mRem ? 1 : 0)
+            const para = sentences.slice(idx, idx + take).join(" ").trim()
+            if (para) newBodyParas.push(para)
+            idx += take
+          }
+
+          const parts: string[] = []
+          if (salutationChunk) parts.push(salutationChunk)
+          parts.push(...newBodyParas)
+          if (signoffChunk) parts.push(signoffChunk)
+          formatted = parts.join("\n\n")
+        }
+      }
+    }
+  }
+
+  // 6. Clean horizontal whitespace & standardize spacing
+  formatted = formatted.replace(/[^\S\r\n]+/g, " ")
+  formatted = formatted.replace(/[^\S\r\n]*\n[^\S\r\n]*/g, "\n")
+  formatted = formatted.replace(/\n{3,}/g, "\n\n")
+
+  return formatted.trim()
+}
+
+/**
  * Normalizes any valid backend response (whether from standard /humanize or /api/refine)
  * into the complete Result structure required by the UI.
  */
@@ -31,13 +123,16 @@ export function normalizeToResult(
     "verification" in data &&
     "revised" in data
   ) {
-    return data as Result
+    const full = { ...(data as Result) }
+    full.revised = restoreEmailAndLetterFormatting(full.revised, full.original || inputText)
+    return full
   }
 
   // Parse as HumanizeFastApiResponse
   const raw = (data || {}) as Partial<HumanizeFastApiResponse>
   const original = typeof raw.original === "string" && raw.original.trim() ? raw.original : inputText
-  const revised = typeof raw.rewrite === "string" ? raw.rewrite : inputText
+  const rawRevised = typeof raw.rewrite === "string" ? raw.rewrite : inputText
+  const revised = restoreEmailAndLetterFormatting(rawRevised, original)
   const warnings = Array.isArray(raw.warnings) ? raw.warnings : []
   const needsReview = Boolean(raw.needs_review)
 
