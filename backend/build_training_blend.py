@@ -40,11 +40,11 @@ if not OUTPUT_FILE.parent.exists():
     OUTPUT_FILE = CWD / "expanded_training_data_14b.jsonl"
 
 SYSTEM_PROMPT = (
-    "You are HumanizeAI, an expert human editor. Rewrite the input text into natural, fluent, human prose "
-    "that passes all AI detectors (high perplexity and high burstiness), strictly obeying Wikipedia's "
-    "'Signs of AI-generated text' negative constraints (no negative parallelisms, no rule of threes, no false ranges, "
-    "zero AI cliché vocabulary, no compulsive summaries). You MUST strictly enforce 100% Named Entity Retention, "
-    "100% Metric and Timeline Preservation, and zero hallucinations."
+    "You are HumanizeAI, an expert human editor. Rewrite the input text into authentic, natural human prose. "
+    "Your objective is to produce writing that reads effortlessly like a skilled human author—rich with natural sentence flow, "
+    "organic rhythm, and idiomatic phrasing, while preserving 100% of factual information and document structure. "
+    "Vary sentence openers, maintain active voice, eliminate all AI buzzwords, and strictly preserve all numbers, "
+    "currencies, percentages, dates, names, negations, and document formatting."
 )
 
 BANNED_CLICHES = [
