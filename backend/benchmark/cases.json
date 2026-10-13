@@ -1,0 +1,2279 @@
+[
+  {
+    "id": "fin_01_swapped_quarterly_revenue",
+    "category": "numerical_financial",
+    "domain": "financial_earnings",
+    "invariant_description": "Attribution of distinct revenue figures to specific fiscal quarters ($4.2M to Q2 2025, $5.1M to Q3 2025).",
+    "format_type": "freeform",
+    "source_text": "In Q2 2025, CloudOps recorded revenue of $4.2M, whereas Q3 2025 revenue reached $5.1M with a 15% operating margin. Expenditures did not exceed $3.0M.",
+    "required_values": [
+      {
+        "value": "$4.2M",
+        "type": "currency",
+        "severity": "critical"
+      },
+      {
+        "value": "$5.1M",
+        "type": "currency",
+        "severity": "critical"
+      },
+      {
+        "value": "$3.0M",
+        "type": "currency",
+        "severity": "critical"
+      },
+      {
+        "value": "15%",
+        "type": "percentage",
+        "severity": "critical"
+      },
+      {
+        "value": "Q2 2025",
+        "type": "date_period",
+        "severity": "critical"
+      },
+      {
+        "value": "Q3 2025",
+        "type": "date_period",
+        "severity": "critical"
+      },
+      {
+        "value": "CloudOps",
+        "type": "entity",
+        "severity": "critical"
+      }
+    ],
+    "required_relations": [
+      {
+        "subject": "$4.2M",
+        "predicate": "revenue_in_period",
+        "target": "Q2 2025",
+        "severity": "critical",
+        "verifiable_offline": true
+      },
+      {
+        "subject": "$5.1M",
+        "predicate": "revenue_in_period",
+        "target": "Q3 2025",
+        "severity": "critical",
+        "verifiable_offline": true
+      },
+      {
+        "subject": "15%",
+        "predicate": "margin_in_period",
+        "target": "Q3 2025",
+        "severity": "critical",
+        "verifiable_offline": true
+      }
+    ],
+    "negations": [
+      {
+        "scope_term": "exceed",
+        "original_polarity": "negative",
+        "severity": "critical",
+        "source_expression": "did not exceed $3.0M"
+      }
+    ],
+    "directional_claims": [],
+    "modality": [],
+    "expected_structure": {},
+    "fixtures": {
+      "unchanged": "In Q2 2025, CloudOps recorded revenue of $4.2M, whereas Q3 2025 revenue reached $5.1M with a 15% operating margin. Expenditures did not exceed $3.0M.",
+      "valid_paraphrase": "CloudOps generated $4.2 million in Q2 2025. By Q3 2025, top-line revenue grew to $5.1 million alongside a 15% operating margin, while costs did not exceed $3.0 million.",
+      "mutations": {
+        "changed_monetary_value": "In Q2 2025, CloudOps recorded revenue of $4.5M, whereas Q3 2025 revenue reached $5.1M with a 15% operating margin. Expenditures did not exceed $3.0M.",
+        "missing_negation": "In Q2 2025, CloudOps recorded revenue of $4.2M, whereas Q3 2025 revenue reached $5.1M with a 15% operating margin. Expenditures exceeded $3.0M.",
+        "swapped_attribution": "In Q2 2025, CloudOps recorded revenue of $5.1M, whereas Q3 2025 revenue reached $4.2M with a 15% operating margin. Expenditures did not exceed $3.0M.",
+        "unexpected_value": "In Q2 2025, CloudOps recorded revenue of $4.2M, whereas Q3 2025 revenue reached $5.1M with a 15% operating margin. An unbudgeted grant of $9.9M was also received. Expenditures did not exceed $3.0M."
+      }
+    }
+  },
+  {
+    "id": "clinical_01_dosage_score_masking",
+    "category": "numerical_financial",
+    "domain": "clinical_trial",
+    "invariant_description": "Strict preservation of pharmaceutical dose quantities (50mg, 100mg, 25mg, 10mg, 5mg); single corrupted dose must fail.",
+    "format_type": "freeform",
+    "source_text": "Patient received 50mg of Compound A, 100mg of Compound B, 25mg of Compound C, 10mg of Compound D, and 5mg of Compound E with no observed adverse reactions.",
+    "required_values": [
+      {
+        "value": "50mg",
+        "type": "quantity",
+        "severity": "critical"
+      },
+      {
+        "value": "100mg",
+        "type": "quantity",
+        "severity": "critical"
+      },
+      {
+        "value": "25mg",
+        "type": "quantity",
+        "severity": "critical"
+      },
+      {
+        "value": "10mg",
+        "type": "quantity",
+        "severity": "critical"
+      },
+      {
+        "value": "5mg",
+        "type": "quantity",
+        "severity": "critical"
+      }
+    ],
+    "required_relations": [],
+    "negations": [
+      {
+        "scope_term": "adverse reactions",
+        "original_polarity": "negative",
+        "severity": "critical",
+        "source_expression": "no observed adverse reactions"
+      }
+    ],
+    "directional_claims": [],
+    "modality": [],
+    "expected_structure": {},
+    "fixtures": {
+      "unchanged": "Patient received 50mg of Compound A, 100mg of Compound B, 25mg of Compound C, 10mg of Compound D, and 5mg of Compound E with no observed adverse reactions.",
+      "valid_paraphrase": "The patient was administered 50mg of Compound A, 100mg of Compound B, 25mg of Compound C, 10mg of Compound D, and 5mg of Compound E without exhibiting adverse reactions.",
+      "mutations": {
+        "fatal_dosage_corruption": "Patient received 500mg of Compound A, 100mg of Compound B, 25mg of Compound C, 10mg of Compound D, and 5mg of Compound E with no observed adverse reactions."
+      }
+    }
+  },
+  {
+    "id": "fin_03_currency_scale_shift",
+    "category": "numerical_financial",
+    "domain": "public_infrastructure",
+    "invariant_description": "Monetary scale distinction between billions ($2.4B) and millions ($350M).",
+    "format_type": "freeform",
+    "source_text": "The infrastructure modernization fund allocated $2.4B to high-speed rail development, whereas $350M was designated for port electrification.",
+    "required_values": [
+      {
+        "value": "$2.4B",
+        "type": "currency",
+        "severity": "critical"
+      },
+      {
+        "value": "$350M",
+        "type": "currency",
+        "severity": "critical"
+      },
+      {
+        "value": "high-speed rail",
+        "type": "entity",
+        "severity": "critical"
+      },
+      {
+        "value": "port electrification",
+        "type": "entity",
+        "severity": "critical"
+      }
+    ],
+    "required_relations": [
+      {
+        "subject": "$2.4B",
+        "predicate": "allocated_to",
+        "target": "high-speed rail",
+        "severity": "critical",
+        "verifiable_offline": true
+      },
+      {
+        "subject": "$350M",
+        "predicate": "allocated_to",
+        "target": "port electrification",
+        "severity": "critical",
+        "verifiable_offline": true
+      }
+    ],
+    "negations": [],
+    "directional_claims": [],
+    "modality": [],
+    "expected_structure": {},
+    "fixtures": {
+      "unchanged": "The infrastructure modernization fund allocated $2.4B to high-speed rail development, whereas $350M was designated for port electrification.",
+      "valid_paraphrase": "For infrastructure upgrades, high-speed rail received an allocation of $2.4B, while $350M was designated for port electrification.",
+      "mutations": {
+        "scale_reduced_billion_to_million": "The infrastructure modernization fund allocated $2.4M to high-speed rail development, whereas $350M was designated for port electrification."
+      }
+    }
+  },
+  {
+    "id": "fin_04_interest_rate_percentage_shift",
+    "category": "numerical_financial",
+    "domain": "macroeconomics",
+    "invariant_description": "Preservation of exact interest rate percentage and basis points (5.25% and 18.0%).",
+    "format_type": "freeform",
+    "source_text": "The central bank raised the benchmark lending rate by 25 basis points to 5.25%, maintaining the statutory liquidity ratio at 18.0%.",
+    "required_values": [
+      {
+        "value": "5.25%",
+        "type": "percentage",
+        "severity": "critical"
+      },
+      {
+        "value": "18.0%",
+        "type": "percentage",
+        "severity": "critical"
+      },
+      {
+        "value": "25 basis points",
+        "type": "quantity",
+        "severity": "critical"
+      }
+    ],
+    "required_relations": [
+      {
+        "subject": "5.25%",
+        "predicate": "lending_rate",
+        "target": "central bank",
+        "severity": "critical",
+        "verifiable_offline": true
+      }
+    ],
+    "negations": [],
+    "directional_claims": [],
+    "modality": [],
+    "expected_structure": {},
+    "fixtures": {
+      "unchanged": "The central bank raised the benchmark lending rate by 25 basis points to 5.25%, maintaining the statutory liquidity ratio at 18.0%.",
+      "valid_paraphrase": "Following a 25 basis points increase, the central bank adjusted the benchmark rate to 5.25%, holding the liquidity ratio steady at 18.0%.",
+      "mutations": {
+        "rate_shifted_by_fifty_bps": "The central bank raised the benchmark lending rate by 25 basis points to 5.75%, maintaining the statutory liquidity ratio at 18.0%."
+      }
+    }
+  },
+  {
+    "id": "fin_05_unit_conversion_corruption",
+    "category": "numerical_financial",
+    "domain": "aerospace_engineering",
+    "invariant_description": "Unit of measurement integrity for engineering payload (750kg vs corrupted 750g).",
+    "format_type": "freeform",
+    "source_text": "The aerospace payload module was rated for a maximum capacity of 750kg, operating under 120kPa atmospheric pressure.",
+    "required_values": [
+      {
+        "value": "750kg",
+        "type": "quantity",
+        "severity": "critical"
+      },
+      {
+        "value": "120kPa",
+        "type": "quantity",
+        "severity": "critical"
+      }
+    ],
+    "required_relations": [
+      {
+        "subject": "750kg",
+        "predicate": "payload_capacity",
+        "target": "120kPa",
+        "severity": "critical",
+        "verifiable_offline": true
+      }
+    ],
+    "negations": [],
+    "directional_claims": [],
+    "modality": [],
+    "expected_structure": {},
+    "fixtures": {
+      "unchanged": "The aerospace payload module was rated for a maximum capacity of 750kg, operating under 120kPa atmospheric pressure.",
+      "valid_paraphrase": "Operating under 120kPa atmospheric pressure, the aerospace module carries a maximum rated payload of 750kg.",
+      "mutations": {
+        "unit_corrupted_kg_to_g": "The aerospace payload module was rated for a maximum capacity of 750g, operating under 120kPa atmospheric pressure."
+      }
+    }
+  },
+  {
+    "id": "fin_06_precision_rounding_distortion",
+    "category": "numerical_financial",
+    "domain": "real_estate_escrow",
+    "invariant_description": "Preservation of exact comma-formatted dollar values ($1,428,500 and $12,450) preventing unauthorized rounding.",
+    "format_type": "freeform",
+    "source_text": "Escrow funds totaled exactly $1,428,500, with $12,450 withheld for stamp duty.",
+    "required_values": [
+      {
+        "value": "$1,428,500",
+        "type": "currency",
+        "severity": "critical"
+      },
+      {
+        "value": "$12,450",
+        "type": "currency",
+        "severity": "critical"
+      }
+    ],
+    "required_relations": [
+      {
+        "subject": "$12,450",
+        "predicate": "withheld_from",
+        "target": "$1,428,500",
+        "severity": "critical",
+        "verifiable_offline": true
+      }
+    ],
+    "negations": [],
+    "directional_claims": [],
+    "modality": [],
+    "expected_structure": {},
+    "fixtures": {
+      "unchanged": "Escrow funds totaled exactly $1,428,500, with $12,450 withheld for stamp duty.",
+      "valid_paraphrase": "A total of $1,428,500 was held in escrow, with deductions of $12,450 applied for stamp duty.",
+      "mutations": {
+        "excessive_rounding_distortion": "Escrow funds totaled exactly $1,500,000, with $12,450 withheld for stamp duty."
+      }
+    }
+  },
+  {
+    "id": "fin_07_swapped_balance_sheet_figures",
+    "category": "numerical_financial",
+    "domain": "corporate_finance",
+    "invariant_description": "Correct pairing of balance sheet metrics: $84.2M to total assets, $51.6M to total liabilities.",
+    "format_type": "freeform",
+    "source_text": "At fiscal year-end, Apex Holdings recorded total assets of $84.2M, whereas total liabilities stood at $51.6M.",
+    "required_values": [
+      {
+        "value": "$84.2M",
+        "type": "currency",
+        "severity": "critical"
+      },
+      {
+        "value": "$51.6M",
+        "type": "currency",
+        "severity": "critical"
+      },
+      {
+        "value": "total assets",
+        "type": "entity",
+        "severity": "critical"
+      },
+      {
+        "value": "total liabilities",
+        "type": "entity",
+        "severity": "critical"
+      },
+      {
+        "value": "Apex Holdings",
+        "type": "entity",
+        "severity": "critical"
+      }
+    ],
+    "required_relations": [
+      {
+        "subject": "$84.2M",
+        "predicate": "value_of",
+        "target": "total assets",
+        "severity": "critical",
+        "verifiable_offline": true
+      },
+      {
+        "subject": "$51.6M",
+        "predicate": "value_of",
+        "target": "total liabilities",
+        "severity": "critical",
+        "verifiable_offline": true
+      }
+    ],
+    "negations": [],
+    "directional_claims": [],
+    "modality": [],
+    "expected_structure": {},
+    "fixtures": {
+      "unchanged": "At fiscal year-end, Apex Holdings recorded total assets of $84.2M, whereas total liabilities stood at $51.6M.",
+      "valid_paraphrase": "Apex Holdings concluded the fiscal year with total assets of $84.2M, while total liabilities amounted to $51.6M.",
+      "mutations": {
+        "swapped_assets_and_liabilities": "At fiscal year-end, Apex Holdings recorded total assets of $51.6M, whereas total liabilities stood at $84.2M."
+      }
+    }
+  },
+  {
+    "id": "fin_08_ungrounded_hallucinated_metric",
+    "category": "numerical_financial",
+    "domain": "venture_capital",
+    "invariant_description": "Rejection of fabricated financial figures ($45.0M) introduced into venture financing context.",
+    "format_type": "freeform",
+    "source_text": "Venture partners injected $18.5M in Series B funding, resulting in a post-money valuation of $92.5M.",
+    "required_values": [
+      {
+        "value": "$18.5M",
+        "type": "currency",
+        "severity": "critical"
+      },
+      {
+        "value": "$92.5M",
+        "type": "currency",
+        "severity": "critical"
+      },
+      {
+        "value": "Series B",
+        "type": "entity",
+        "severity": "critical"
+      }
+    ],
+    "required_relations": [
+      {
+        "subject": "$18.5M",
+        "predicate": "funding_for",
+        "target": "Series B",
+        "severity": "critical",
+        "verifiable_offline": true
+      }
+    ],
+    "negations": [],
+    "directional_claims": [],
+    "modality": [],
+    "expected_structure": {},
+    "fixtures": {
+      "unchanged": "Venture partners injected $18.5M in Series B funding, resulting in a post-money valuation of $92.5M.",
+      "valid_paraphrase": "Through an injection of $18.5M in Series B financing, the startup reached a post-money valuation of $92.5M.",
+      "mutations": {
+        "hallucinated_annual_revenue": "Venture partners injected $18.5M in Series B funding, establishing an ungrounded revenue run rate of $45.0M and a post-money valuation of $92.5M."
+      }
+    }
+  },
+  {
+    "id": "fin_09_foreign_currency_symbol_swap",
+    "category": "numerical_financial",
+    "domain": "international_treasury",
+    "invariant_description": "Preservation of Euro denomination (\u20ac45.0M and \u20ac62.8M) against currency symbol substitution (\u00a3).",
+    "format_type": "freeform",
+    "source_text": "The European subsidiary remitted \u20ac45.0M in dividends to headquarters, following an operational profit of \u20ac62.8M.",
+    "required_values": [
+      {
+        "value": "\u20ac45.0M",
+        "type": "currency",
+        "severity": "critical"
+      },
+      {
+        "value": "\u20ac62.8M",
+        "type": "currency",
+        "severity": "critical"
+      },
+      {
+        "value": "European subsidiary",
+        "type": "entity",
+        "severity": "critical"
+      }
+    ],
+    "required_relations": [
+      {
+        "subject": "\u20ac45.0M",
+        "predicate": "dividend_from",
+        "target": "European subsidiary",
+        "severity": "critical",
+        "verifiable_offline": true
+      }
+    ],
+    "negations": [],
+    "directional_claims": [],
+    "modality": [],
+    "expected_structure": {},
+    "fixtures": {
+      "unchanged": "The European subsidiary remitted \u20ac45.0M in dividends to headquarters, following an operational profit of \u20ac62.8M.",
+      "valid_paraphrase": "Following an operating profit of \u20ac62.8M, the European subsidiary distributed \u20ac45.0M in dividends to corporate headquarters.",
+      "mutations": {
+        "currency_swapped_euro_to_pound": "The European subsidiary remitted \u00a345.0M in dividends to headquarters, following an operational profit of \u20ac62.8M."
+      }
+    }
+  },
+  {
+    "id": "fin_10_per_share_metric_shift",
+    "category": "numerical_financial",
+    "domain": "equity_research",
+    "invariant_description": "Preservation of per-share earnings metrics ($2.18 vs shifted $3.18).",
+    "format_type": "freeform",
+    "source_text": "Diluted earnings per share stood at $2.18, representing an improvement over the prior year figure of $1.84.",
+    "required_values": [
+      {
+        "value": "$2.18",
+        "type": "currency",
+        "severity": "critical"
+      },
+      {
+        "value": "$1.84",
+        "type": "currency",
+        "severity": "critical"
+      }
+    ],
+    "required_relations": [
+      {
+        "subject": "$2.18",
+        "predicate": "diluted_eps_over",
+        "target": "$1.84",
+        "severity": "critical",
+        "verifiable_offline": true
+      }
+    ],
+    "negations": [],
+    "directional_claims": [],
+    "modality": [],
+    "expected_structure": {},
+    "fixtures": {
+      "unchanged": "Diluted earnings per share stood at $2.18, representing an improvement over the prior year figure of $1.84.",
+      "valid_paraphrase": "Reporting an improvement from the previous year's $1.84, diluted earnings per share reached $2.18.",
+      "mutations": {
+        "diluted_eps_shifted_by_dollar": "Diluted earnings per share stood at $3.18, representing an improvement over the prior year figure of $1.84."
+      }
+    }
+  },
+  {
+    "id": "timeline_01_closed_range_audit",
+    "category": "dates_timelines",
+    "domain": "regulatory_compliance",
+    "invariant_description": "Preservation of closed date boundary ('August 1 to September 30') with 4 mandatory review sessions.",
+    "format_type": "freeform",
+    "source_text": "The regulatory filing window remained open from August 1 to September 30, during which the audit committee held 4 mandatory review sessions.",
+    "required_values": [
+      {
+        "value": "August 1 to September 30",
+        "type": "date_range",
+        "severity": "critical",
+        "start_date": "August 1",
+        "end_date": "September 30"
+      },
+      {
+        "value": "4",
+        "type": "quantity",
+        "severity": "critical"
+      }
+    ],
+    "required_relations": [
+      {
+        "subject": "4",
+        "predicate": "sessions_during_window",
+        "target": "August 1 to September 30",
+        "severity": "critical",
+        "verifiable_offline": true
+      }
+    ],
+    "negations": [],
+    "directional_claims": [],
+    "modality": [],
+    "expected_structure": {},
+    "fixtures": {
+      "unchanged": "The regulatory filing window remained open from August 1 to September 30, during which the audit committee held 4 mandatory review sessions.",
+      "valid_paraphrase": "Between August 1 and September 30, the formal filing window was active, and the audit committee convened 4 mandatory review sessions.",
+      "mutations": {
+        "altered_range_open_ended": "The regulatory filing window has been open since August 1, during which the audit committee held 4 mandatory review sessions.",
+        "missing_date_boundary": "The regulatory filing window remained open until September 30, during which the audit committee held 4 mandatory review sessions."
+      }
+    }
+  },
+  {
+    "id": "timeline_02_deadline_day_shift",
+    "category": "dates_timelines",
+    "domain": "procurement_contracts",
+    "invariant_description": "Preservation of specific tender deadline (November 17, 2025 before 17:00 EST).",
+    "format_type": "freeform",
+    "source_text": "All tender submissions must be delivered by November 17, 2025, before 17:00 EST.",
+    "required_values": [
+      {
+        "value": "November 17, 2025",
+        "type": "date_period",
+        "severity": "critical"
+      },
+      {
+        "value": "17:00 EST",
+        "type": "time",
+        "severity": "critical"
+      }
+    ],
+    "required_relations": [
+      {
+        "subject": "17:00 EST",
+        "predicate": "cutoff_on",
+        "target": "November 17, 2025",
+        "severity": "critical",
+        "verifiable_offline": true
+      }
+    ],
+    "negations": [],
+    "directional_claims": [],
+    "modality": [],
+    "expected_structure": {},
+    "fixtures": {
+      "unchanged": "All tender submissions must be delivered by November 17, 2025, before 17:00 EST.",
+      "valid_paraphrase": "Vendors must submit all tender bids no later than 17:00 EST on November 17, 2025.",
+      "mutations": {
+        "deadline_delayed_by_one_week": "All tender submissions must be delivered by November 24, 2025, before 17:00 EST."
+      }
+    }
+  },
+  {
+    "id": "timeline_03_missing_effective_date",
+    "category": "dates_timelines",
+    "domain": "contractual_governance",
+    "invariant_description": "Retention of future effective date (January 1, 2026) superseding prior 2021 covenants.",
+    "format_type": "freeform",
+    "source_text": "The amended terms take effect on January 1, 2026, superseding all covenants signed in 2021.",
+    "required_values": [
+      {
+        "value": "January 1, 2026",
+        "type": "date_period",
+        "severity": "critical"
+      },
+      {
+        "value": "2021",
+        "type": "date_period",
+        "severity": "critical"
+      }
+    ],
+    "required_relations": [
+      {
+        "subject": "January 1, 2026",
+        "predicate": "supersedes",
+        "target": "2021",
+        "severity": "critical",
+        "verifiable_offline": true
+      }
+    ],
+    "negations": [],
+    "directional_claims": [],
+    "modality": [],
+    "expected_structure": {},
+    "fixtures": {
+      "unchanged": "The amended terms take effect on January 1, 2026, superseding all covenants signed in 2021.",
+      "valid_paraphrase": "Starting January 1, 2026, the updated terms become operational, replacing agreements established in 2021.",
+      "mutations": {
+        "effective_date_omitted": "The amended terms take effect immediately, superseding all covenants signed in 2021."
+      }
+    }
+  },
+  {
+    "id": "timeline_04_open_ended_distortion",
+    "category": "dates_timelines",
+    "domain": "clinical_research",
+    "invariant_description": "Closed clinical enrollment interval ('March 1, 2023 to October 31, 2023') with 140 participants.",
+    "format_type": "freeform",
+    "source_text": "Clinical trials enrolled subjects between March 1, 2023 and October 31, 2023, gathering telemetry from 140 participants.",
+    "required_values": [
+      {
+        "value": "March 1, 2023 to October 31, 2023",
+        "type": "date_range",
+        "severity": "critical",
+        "start_date": "March 1, 2023",
+        "end_date": "October 31, 2023"
+      },
+      {
+        "value": "140",
+        "type": "quantity",
+        "severity": "critical"
+      }
+    ],
+    "required_relations": [
+      {
+        "subject": "140",
+        "predicate": "enrolled_in",
+        "target": "March 1, 2023 to October 31, 2023",
+        "severity": "critical",
+        "verifiable_offline": true
+      }
+    ],
+    "negations": [],
+    "directional_claims": [],
+    "modality": [],
+    "expected_structure": {},
+    "fixtures": {
+      "unchanged": "Clinical trials enrolled subjects between March 1, 2023 and October 31, 2023, gathering telemetry from 140 participants.",
+      "valid_paraphrase": "Across the intake period from March 1, 2023 to October 31, 2023, clinical trials registered telemetry from 140 participants.",
+      "mutations": {
+        "end_date_omitted_open_ended": "Clinical trials enrolled subjects starting March 1, 2023, gathering telemetry from 140 participants."
+      }
+    }
+  },
+  {
+    "id": "timeline_05_quarter_year_mismatch",
+    "category": "dates_timelines",
+    "domain": "product_management",
+    "invariant_description": "Precise quarter-year milestones: product rollout in Q4 2024 precedes certification in Q2 2025.",
+    "format_type": "freeform",
+    "source_text": "Product rollout was completed during Q4 2024, ahead of the compliance certification milestone in Q2 2025.",
+    "required_values": [
+      {
+        "value": "Q4 2024",
+        "type": "date_period",
+        "severity": "critical"
+      },
+      {
+        "value": "Q2 2025",
+        "type": "date_period",
+        "severity": "critical"
+      }
+    ],
+    "required_relations": [
+      {
+        "subject": "Q4 2024",
+        "predicate": "ahead_of",
+        "target": "Q2 2025",
+        "severity": "critical",
+        "verifiable_offline": true
+      }
+    ],
+    "negations": [],
+    "directional_claims": [],
+    "modality": [],
+    "expected_structure": {},
+    "fixtures": {
+      "unchanged": "Product rollout was completed during Q4 2024, ahead of the compliance certification milestone in Q2 2025.",
+      "valid_paraphrase": "The team finished the product rollout in Q4 2024, in advance of the Q2 2025 compliance audit milestone.",
+      "mutations": {
+        "year_mismatch_inverting_sequence": "Product rollout was completed during Q4 2025, ahead of the compliance certification milestone in Q2 2025."
+      }
+    }
+  },
+  {
+    "id": "timeline_06_time_zone_cutoff_shift",
+    "category": "dates_timelines",
+    "domain": "database_infrastructure",
+    "invariant_description": "Timezone cutoff preservation (02:00 UTC vs altered 02:00 EST).",
+    "format_type": "freeform",
+    "source_text": "Database failover synchronization completes at 02:00 UTC, after which read-only replicas become writable.",
+    "required_values": [
+      {
+        "value": "02:00 UTC",
+        "type": "time",
+        "severity": "critical"
+      },
+      {
+        "value": "read-only replicas",
+        "type": "entity",
+        "severity": "critical"
+      }
+    ],
+    "required_relations": [
+      {
+        "subject": "02:00 UTC",
+        "predicate": "completion_time",
+        "target": "read-only replicas",
+        "severity": "critical",
+        "verifiable_offline": true
+      }
+    ],
+    "negations": [],
+    "directional_claims": [],
+    "modality": [],
+    "expected_structure": {},
+    "fixtures": {
+      "unchanged": "Database failover synchronization completes at 02:00 UTC, after which read-only replicas become writable.",
+      "valid_paraphrase": "At 02:00 UTC, database failover synchronization finishes, allowing read-only replicas to accept writes.",
+      "mutations": {
+        "timezone_shifted_utc_to_est": "Database failover synchronization completes at 02:00 EST, after which read-only replicas become writable."
+      }
+    }
+  },
+  {
+    "id": "timeline_07_sequence_order_inversion",
+    "category": "dates_timelines",
+    "domain": "environmental_engineering",
+    "invariant_description": "Preservation of chronological order: Phase 1 remediation in May 2024, Phase 2 excavation in September 2024.",
+    "format_type": "freeform",
+    "source_text": "Phase 1 environmental remediation concluded in May 2024, whereas Phase 2 site excavation concluded in September 2024.",
+    "required_values": [
+      {
+        "value": "Phase 1",
+        "type": "entity",
+        "severity": "critical"
+      },
+      {
+        "value": "May 2024",
+        "type": "date_period",
+        "severity": "critical"
+      },
+      {
+        "value": "Phase 2",
+        "type": "entity",
+        "severity": "critical"
+      },
+      {
+        "value": "September 2024",
+        "type": "date_period",
+        "severity": "critical"
+      }
+    ],
+    "required_relations": [
+      {
+        "subject": "May 2024",
+        "predicate": "concluded_for",
+        "target": "Phase 1",
+        "severity": "critical",
+        "verifiable_offline": true
+      },
+      {
+        "subject": "September 2024",
+        "predicate": "concluded_for",
+        "target": "Phase 2",
+        "severity": "critical",
+        "verifiable_offline": true
+      }
+    ],
+    "negations": [],
+    "directional_claims": [],
+    "modality": [],
+    "expected_structure": {},
+    "fixtures": {
+      "unchanged": "Phase 1 environmental remediation concluded in May 2024, whereas Phase 2 site excavation concluded in September 2024.",
+      "valid_paraphrase": "Site remediation under Phase 1 finished in May 2024, while Phase 2 excavation wrapped up in September 2024.",
+      "mutations": {
+        "inverted_chronological_phases": "Phase 2 site excavation concluded in May 2024, whereas Phase 1 environmental remediation concluded in September 2024."
+      }
+    }
+  },
+  {
+    "id": "timeline_08_statute_of_limitations_window",
+    "category": "dates_timelines",
+    "domain": "legal_statute",
+    "invariant_description": "Preservation of statutory limitation window (90-day vs altered 30-day).",
+    "format_type": "freeform",
+    "source_text": "Claims must be filed within a 90-day window following discovery of the defect, or rights to restitution expire.",
+    "required_values": [
+      {
+        "value": "90-day",
+        "type": "quantity",
+        "severity": "critical"
+      },
+      {
+        "value": "restitution",
+        "type": "entity",
+        "severity": "critical"
+      }
+    ],
+    "required_relations": [
+      {
+        "subject": "90-day",
+        "predicate": "limitation_window",
+        "target": "restitution",
+        "severity": "critical",
+        "verifiable_offline": true
+      }
+    ],
+    "negations": [],
+    "directional_claims": [],
+    "modality": [],
+    "expected_structure": {},
+    "fixtures": {
+      "unchanged": "Claims must be filed within a 90-day window following discovery of the defect, or rights to restitution expire.",
+      "valid_paraphrase": "To retain eligibility for restitution, formal claims are required within a 90-day period after finding the defect.",
+      "mutations": {
+        "window_reduced_to_thirty_days": "Claims must be filed within a 30-day window following discovery of the defect, or rights to restitution expire."
+      }
+    }
+  },
+  {
+    "id": "policy_02_approval_and_compliance_modality",
+    "category": "negation_modality",
+    "domain": "governance_compliance",
+    "invariant_description": "Modality separation: 'may approve' (possibility) vs 'must complete' (obligation).",
+    "format_type": "freeform",
+    "source_text": "The review committee may approve the extension request, but all contractors must complete security training by Friday.",
+    "required_values": [
+      {
+        "value": "review committee",
+        "type": "entity",
+        "severity": "critical"
+      },
+      {
+        "value": "Friday",
+        "type": "entity",
+        "severity": "critical"
+      }
+    ],
+    "required_relations": [],
+    "directional_claims": [],
+    "negations": [],
+    "modality": [
+      {
+        "id": "mod_approve",
+        "scope_term": "approve",
+        "target_entity": "review committee",
+        "required_modality": "possibility",
+        "severity": "critical"
+      },
+      {
+        "id": "mod_complete",
+        "scope_term": "complete",
+        "target_entity": "contractors",
+        "required_modality": "obligation",
+        "severity": "critical"
+      }
+    ],
+    "expected_structure": {},
+    "fixtures": {
+      "unchanged": "The review committee may approve the extension request, but all contractors must complete security training by Friday.",
+      "valid_paraphrase": "The review committee is permitted to approve the extension request, though all contractors are required to complete security training by Friday.",
+      "mutations": {
+        "may_to_must": "The review committee must approve the extension request, but all contractors must complete security training by Friday.",
+        "must_to_may": "The review committee may approve the extension request, but all contractors may complete security training by Friday."
+      },
+      "unverifiable_syntax": "The review committee approved the extension request, and contractors completed security training by Friday.",
+      "adversarial_passes": {
+        "unrelated_opposite_clause": "The review committee may approve the extension request, but all contractors must complete security training by Friday, though auditors must independently review logs."
+      }
+    }
+  },
+  {
+    "id": "neg_01_removed_negation_liability",
+    "category": "negation_modality",
+    "domain": "software_licensing",
+    "invariant_description": "Preservation of non-liability negation ('does not assume liability').",
+    "format_type": "freeform",
+    "source_text": "The vendor does not assume liability for consequential losses resulting from unannounced cloud provider outages.",
+    "required_values": [
+      {
+        "value": "vendor",
+        "type": "entity",
+        "severity": "critical"
+      },
+      {
+        "value": "consequential losses",
+        "type": "entity",
+        "severity": "critical"
+      }
+    ],
+    "required_relations": [],
+    "directional_claims": [],
+    "negations": [
+      {
+        "scope_term": "liability",
+        "original_polarity": "negative",
+        "severity": "critical",
+        "source_expression": "does not assume liability"
+      }
+    ],
+    "modality": [],
+    "expected_structure": {},
+    "fixtures": {
+      "unchanged": "The vendor does not assume liability for consequential losses resulting from unannounced cloud provider outages.",
+      "valid_paraphrase": "For consequential losses resulting from unexpected cloud outages, the vendor does not assume liability.",
+      "mutations": {
+        "removed_negation_assuming_liability": "The vendor assumes liability for consequential losses resulting from unannounced cloud provider outages."
+      }
+    }
+  },
+  {
+    "id": "neg_02_double_polarity_ambiguity",
+    "category": "negation_modality",
+    "domain": "industrial_safety",
+    "invariant_description": "Containment integrity negation: vessel did not breach pressure thresholds.",
+    "format_type": "freeform",
+    "source_text": "The inspection team confirmed the containment vessel did not breach pressure thresholds during thermal testing.",
+    "required_values": [
+      {
+        "value": "containment vessel",
+        "type": "entity",
+        "severity": "critical"
+      },
+      {
+        "value": "pressure thresholds",
+        "type": "entity",
+        "severity": "critical"
+      }
+    ],
+    "required_relations": [],
+    "directional_claims": [],
+    "negations": [
+      {
+        "scope_term": "breach",
+        "original_polarity": "negative",
+        "severity": "critical",
+        "source_expression": "did not breach pressure thresholds"
+      }
+    ],
+    "modality": [],
+    "expected_structure": {},
+    "fixtures": {
+      "unchanged": "The inspection team confirmed the containment vessel did not breach pressure thresholds during thermal testing.",
+      "valid_paraphrase": "Inspectors verified that the containment vessel did not breach pressure thresholds throughout thermal trials.",
+      "mutations": {
+        "polarity_flipped_to_breach": "The inspection team confirmed the containment vessel breached pressure thresholds during thermal testing."
+      }
+    }
+  },
+  {
+    "id": "neg_03_negation_with_intervening_adverbs",
+    "category": "negation_modality",
+    "domain": "banking_compliance",
+    "invariant_description": "Negation separated by intervening adverbs ('did not under any circumstances authorize').",
+    "format_type": "freeform",
+    "source_text": "The board did not under any circumstances authorize wire transfers to third-party accounts.",
+    "required_values": [
+      {
+        "value": "wire transfers",
+        "type": "entity",
+        "severity": "critical"
+      },
+      {
+        "value": "third-party accounts",
+        "type": "entity",
+        "severity": "critical"
+      }
+    ],
+    "required_relations": [],
+    "directional_claims": [],
+    "negations": [
+      {
+        "scope_term": "authorize",
+        "original_polarity": "negative",
+        "severity": "critical",
+        "source_expression": "did not under any circumstances authorize"
+      }
+    ],
+    "modality": [],
+    "expected_structure": {},
+    "fixtures": {
+      "unchanged": "The board did not under any circumstances authorize wire transfers to third-party accounts.",
+      "valid_paraphrase": "At no point did the board authorize wire transfers into unverified third-party accounts.",
+      "mutations": {
+        "authorized_transfers": "The board authorized wire transfers to third-party accounts under exceptional circumstances."
+      }
+    }
+  },
+  {
+    "id": "mod_01_obligation_to_possibility_downgrade",
+    "category": "negation_modality",
+    "domain": "cybersecurity_compliance",
+    "invariant_description": "Preservation of mandatory tablespace encryption ('must encrypt' vs downgraded 'may encrypt').",
+    "format_type": "freeform",
+    "source_text": "All database instances storing confidential patient records must encrypt tablespaces at rest.",
+    "required_values": [
+      {
+        "value": "patient records",
+        "type": "entity",
+        "severity": "critical"
+      },
+      {
+        "value": "tablespaces",
+        "type": "entity",
+        "severity": "critical"
+      }
+    ],
+    "required_relations": [],
+    "directional_claims": [],
+    "negations": [],
+    "modality": [
+      {
+        "id": "mod_encrypt",
+        "scope_term": "encrypt",
+        "target_entity": "database instances",
+        "required_modality": "obligation",
+        "severity": "critical"
+      }
+    ],
+    "expected_structure": {},
+    "fixtures": {
+      "unchanged": "All database instances storing confidential patient records must encrypt tablespaces at rest.",
+      "valid_paraphrase": "All database instances storing confidential patient records are required to encrypt tablespaces at rest.",
+      "mutations": {
+        "obligation_downgraded_to_may": "All database instances storing confidential patient records may encrypt tablespaces at rest."
+      }
+    }
+  },
+  {
+    "id": "mod_02_prohibition_to_permission_flip",
+    "category": "negation_modality",
+    "domain": "security_operations",
+    "invariant_description": "Prohibition enforcement: sharing credentials across chat is strictly prohibited / must not occur.",
+    "format_type": "freeform",
+    "source_text": "Engineering staff cannot share master credentials across team communication channels.",
+    "required_values": [
+      {
+        "value": "master credentials",
+        "type": "entity",
+        "severity": "critical"
+      },
+      {
+        "value": "Engineering staff",
+        "type": "entity",
+        "severity": "critical"
+      }
+    ],
+    "required_relations": [],
+    "directional_claims": [],
+    "negations": [],
+    "modality": [
+      {
+        "id": "mod_share_prohibited",
+        "scope_term": "share",
+        "target_entity": "Engineering staff",
+        "required_modality": "obligation",
+        "severity": "critical",
+        "accepted_markers": [
+          "cannot",
+          "must not",
+          "prohibited from",
+          "not allowed to"
+        ],
+        "reversed_markers": [
+          "may",
+          "can",
+          "permitted to",
+          "allowed to"
+        ]
+      }
+    ],
+    "expected_structure": {},
+    "fixtures": {
+      "unchanged": "Engineering staff cannot share master credentials across team communication channels.",
+      "valid_paraphrase": "Engineering staff must not share master credentials through group communication channels.",
+      "mutations": {
+        "prohibition_flipped_to_permitted": "Engineering staff may share master credentials across team communication channels."
+      }
+    }
+  },
+  {
+    "id": "mod_03_uncertainty_to_fact_shift",
+    "category": "negation_modality",
+    "domain": "firmware_engineering",
+    "invariant_description": "Preservation of epistemic possibility: bug B-12 might cause dropouts (not definitely causes).",
+    "format_type": "freeform",
+    "source_text": "Internal diagnostics indicated that firmware bug B-12 might cause occasional telemetry dropouts under peak load.",
+    "required_values": [
+      {
+        "value": "bug B-12",
+        "type": "entity",
+        "severity": "critical"
+      },
+      {
+        "value": "telemetry dropouts",
+        "type": "entity",
+        "severity": "critical"
+      }
+    ],
+    "required_relations": [],
+    "directional_claims": [],
+    "negations": [],
+    "modality": [
+      {
+        "id": "mod_cause_uncertain",
+        "scope_term": "cause",
+        "target_entity": "bug B-12",
+        "required_modality": "possibility",
+        "severity": "critical"
+      }
+    ],
+    "expected_structure": {},
+    "fixtures": {
+      "unchanged": "Internal diagnostics indicated that firmware bug B-12 might cause occasional telemetry dropouts under peak load.",
+      "valid_paraphrase": "According to diagnostic logs, firmware bug B-12 could cause intermittent telemetry dropouts during peak load.",
+      "mutations": {
+        "uncertainty_promoted_to_mandate": "Internal diagnostics indicated that firmware bug B-12 must cause occasional telemetry dropouts under peak load."
+      }
+    }
+  },
+  {
+    "id": "mod_04_inverted_question_modality",
+    "category": "negation_modality",
+    "domain": "corporate_governance",
+    "invariant_description": "Discretionary right preservation: shareholders owning >5% may request review (not obligated to request).",
+    "format_type": "freeform",
+    "source_text": "Shareholders owning more than 5% equity may request an expedited review of executive compensation.",
+    "required_values": [
+      {
+        "value": "5%",
+        "type": "percentage",
+        "severity": "critical"
+      },
+      {
+        "value": "executive compensation",
+        "type": "entity",
+        "severity": "critical"
+      }
+    ],
+    "required_relations": [],
+    "directional_claims": [],
+    "negations": [],
+    "modality": [
+      {
+        "id": "mod_request_discretionary",
+        "scope_term": "request",
+        "target_entity": "Shareholders",
+        "required_modality": "possibility",
+        "severity": "critical"
+      }
+    ],
+    "expected_structure": {},
+    "fixtures": {
+      "unchanged": "Shareholders owning more than 5% equity may request an expedited review of executive compensation.",
+      "valid_paraphrase": "Shareholders holding over 5% equity are permitted to request an expedited audit of executive compensation.",
+      "mutations": {
+        "discretion_forced_to_obligation": "Shareholders owning more than 5% equity must request an expedited review of executive compensation."
+      }
+    }
+  },
+  {
+    "id": "term_01_entity_substitution_pharma",
+    "category": "names_technical_terms",
+    "domain": "pharmacology",
+    "invariant_description": "Preservation of specific pharmaceutical active ingredient (Ibuprofen vs Acetaminophen).",
+    "format_type": "freeform",
+    "source_text": "During clinical trial Phase II, subjects received Ibuprofen as the primary anti-inflammatory agent alongside Placebo B.",
+    "required_values": [
+      {
+        "value": "Ibuprofen",
+        "type": "entity",
+        "severity": "critical"
+      },
+      {
+        "value": "Placebo B",
+        "type": "entity",
+        "severity": "critical"
+      },
+      {
+        "value": "Phase II",
+        "type": "entity",
+        "severity": "critical"
+      }
+    ],
+    "required_relations": [
+      {
+        "subject": "Ibuprofen",
+        "predicate": "administered_in",
+        "target": "Phase II",
+        "severity": "critical",
+        "verifiable_offline": true
+      }
+    ],
+    "negations": [],
+    "directional_claims": [],
+    "modality": [],
+    "expected_structure": {},
+    "fixtures": {
+      "unchanged": "During clinical trial Phase II, subjects received Ibuprofen as the primary anti-inflammatory agent alongside Placebo B.",
+      "valid_paraphrase": "Throughout Phase II clinical trials, participants were administered Ibuprofen as the lead anti-inflammatory along with Placebo B.",
+      "mutations": {
+        "drug_substituted_acetaminophen": "During clinical trial Phase II, subjects received Acetaminophen as the primary anti-inflammatory agent alongside Placebo B."
+      }
+    }
+  },
+  {
+    "id": "term_02_technical_acronym_corruption",
+    "category": "names_technical_terms",
+    "domain": "cryptography",
+    "invariant_description": "Preservation of cryptographic signature algorithm name (ECDSA secp256k1 vs RSA).",
+    "format_type": "freeform",
+    "source_text": "Key generation requires ECDSA elliptic curve cryptography using curve secp256k1 for all hardware wallets.",
+    "required_values": [
+      {
+        "value": "ECDSA",
+        "type": "entity",
+        "severity": "critical"
+      },
+      {
+        "value": "secp256k1",
+        "type": "entity",
+        "severity": "critical"
+      }
+    ],
+    "required_relations": [
+      {
+        "subject": "ECDSA",
+        "predicate": "configured_with",
+        "target": "secp256k1",
+        "severity": "critical",
+        "verifiable_offline": true
+      }
+    ],
+    "negations": [],
+    "directional_claims": [],
+    "modality": [],
+    "expected_structure": {},
+    "fixtures": {
+      "unchanged": "Key generation requires ECDSA elliptic curve cryptography using curve secp256k1 for all hardware wallets.",
+      "valid_paraphrase": "For hardware wallets, key derivation utilizes ECDSA cryptography implemented over the secp256k1 elliptic curve.",
+      "mutations": {
+        "algorithm_corrupted_to_rsa": "Key generation requires RSA elliptic curve cryptography using curve secp256k1 for all hardware wallets."
+      }
+    }
+  },
+  {
+    "id": "term_03_named_individual_attribution_swap",
+    "category": "names_technical_terms",
+    "domain": "protocol_engineering",
+    "invariant_description": "Correct attribution of technical RFC authorship to Elena Rostova.",
+    "format_type": "freeform",
+    "source_text": "Lead architect Elena Rostova authored the RFC specifying the zero-knowledge consensus mechanism.",
+    "required_values": [
+      {
+        "value": "Elena Rostova",
+        "type": "entity",
+        "severity": "critical"
+      },
+      {
+        "value": "zero-knowledge",
+        "type": "entity",
+        "severity": "critical"
+      }
+    ],
+    "required_relations": [
+      {
+        "subject": "Elena Rostova",
+        "predicate": "authored_rfc",
+        "target": "zero-knowledge",
+        "severity": "critical",
+        "verifiable_offline": true
+      }
+    ],
+    "negations": [],
+    "directional_claims": [],
+    "modality": [],
+    "expected_structure": {},
+    "fixtures": {
+      "unchanged": "Lead architect Elena Rostova authored the RFC specifying the zero-knowledge consensus mechanism.",
+      "valid_paraphrase": "The engineering RFC defining the zero-knowledge consensus protocol was authored by lead architect Elena Rostova.",
+      "mutations": {
+        "author_swapped_to_marcus_vance": "Lead architect Marcus Vance authored the RFC specifying the zero-knowledge consensus mechanism."
+      }
+    }
+  },
+  {
+    "id": "term_04_chemical_compound_variant",
+    "category": "names_technical_terms",
+    "domain": "food_chemistry",
+    "invariant_description": "Preservation of chemical compound name: Sodium Nitrite at 150ppm (not Sodium Nitrate).",
+    "format_type": "freeform",
+    "source_text": "Preservation protocols mandate using Sodium Nitrite at a concentration of 150ppm in curing brines.",
+    "required_values": [
+      {
+        "value": "Sodium Nitrite",
+        "type": "entity",
+        "severity": "critical"
+      },
+      {
+        "value": "150ppm",
+        "type": "quantity",
+        "severity": "critical"
+      }
+    ],
+    "required_relations": [
+      {
+        "subject": "Sodium Nitrite",
+        "predicate": "concentration_of",
+        "target": "150ppm",
+        "severity": "critical",
+        "verifiable_offline": true
+      }
+    ],
+    "negations": [],
+    "directional_claims": [],
+    "modality": [],
+    "expected_structure": {},
+    "fixtures": {
+      "unchanged": "Preservation protocols mandate using Sodium Nitrite at a concentration of 150ppm in curing brines.",
+      "valid_paraphrase": "Food safety standards require Sodium Nitrite formulated at 150ppm concentration for meat curing brines.",
+      "mutations": {
+        "compound_altered_to_nitrate": "Preservation protocols mandate using Sodium Nitrate at a concentration of 150ppm in curing brines."
+      }
+    }
+  },
+  {
+    "id": "term_05_cloud_service_name_swap",
+    "category": "names_technical_terms",
+    "domain": "cloud_architecture",
+    "invariant_description": "Correct identification of managed datastore service (DynamoDB vs Bigtable).",
+    "format_type": "freeform",
+    "source_text": "The ingest pipeline dispatches real-time session records to DynamoDB, retaining raw event logs for 30 days.",
+    "required_values": [
+      {
+        "value": "DynamoDB",
+        "type": "entity",
+        "severity": "critical"
+      },
+      {
+        "value": "30 days",
+        "type": "quantity",
+        "severity": "critical"
+      }
+    ],
+    "required_relations": [
+      {
+        "subject": "DynamoDB",
+        "predicate": "retains_for",
+        "target": "30 days",
+        "severity": "critical",
+        "verifiable_offline": true
+      }
+    ],
+    "negations": [],
+    "directional_claims": [],
+    "modality": [],
+    "expected_structure": {},
+    "fixtures": {
+      "unchanged": "The ingest pipeline dispatches real-time session records to DynamoDB, retaining raw event logs for 30 days.",
+      "valid_paraphrase": "Real-time session events stream directly into DynamoDB, with initial event logs preserved for 30 days.",
+      "mutations": {
+        "service_swapped_to_bigtable": "The ingest pipeline dispatches real-time session records to Bigtable, retaining raw event logs for 30 days."
+      }
+    }
+  },
+  {
+    "id": "term_06_legal_clause_term_alteration",
+    "category": "names_technical_terms",
+    "domain": "contractual_law",
+    "invariant_description": "Preservation of legal covenant title: Indemnification clause under Section 14.",
+    "format_type": "freeform",
+    "source_text": "Under Section 14, the Indemnification covenant shields licensors from third-party patent infringement claims.",
+    "required_values": [
+      {
+        "value": "Indemnification",
+        "type": "entity",
+        "severity": "critical"
+      },
+      {
+        "value": "Section 14",
+        "type": "entity",
+        "severity": "critical"
+      }
+    ],
+    "required_relations": [
+      {
+        "subject": "Indemnification",
+        "predicate": "stipulated_in",
+        "target": "Section 14",
+        "severity": "critical",
+        "verifiable_offline": true
+      }
+    ],
+    "negations": [],
+    "directional_claims": [],
+    "modality": [],
+    "expected_structure": {},
+    "fixtures": {
+      "unchanged": "Under Section 14, the Indemnification covenant shields licensors from third-party patent infringement claims.",
+      "valid_paraphrase": "Section 14 contains an Indemnification clause protecting software licensors against third-party patent actions.",
+      "mutations": {
+        "clause_altered_to_severability": "Under Section 14, the Severability covenant shields licensors from third-party patent infringement claims."
+      }
+    }
+  },
+  {
+    "id": "term_07_protocol_standard_shift",
+    "category": "names_technical_terms",
+    "domain": "networking_protocols",
+    "invariant_description": "Preservation of communication protocol standard (gRPC vs REST).",
+    "format_type": "freeform",
+    "source_text": "Microservices communicate internally over gRPC using protocol buffers, with latency capped below 5ms.",
+    "required_values": [
+      {
+        "value": "gRPC",
+        "type": "entity",
+        "severity": "critical"
+      },
+      {
+        "value": "5ms",
+        "type": "quantity",
+        "severity": "critical"
+      }
+    ],
+    "required_relations": [
+      {
+        "subject": "gRPC",
+        "predicate": "operates_under",
+        "target": "5ms",
+        "severity": "critical",
+        "verifiable_offline": true
+      }
+    ],
+    "negations": [],
+    "directional_claims": [],
+    "modality": [],
+    "expected_structure": {},
+    "fixtures": {
+      "unchanged": "Microservices communicate internally over gRPC using protocol buffers, with latency capped below 5ms.",
+      "valid_paraphrase": "Internal microservice RPC calls utilize gRPC with protobuf serialization, maintaining latency under 5ms.",
+      "mutations": {
+        "protocol_swapped_to_rest": "Microservices communicate internally over REST using protocol buffers, with latency capped below 5ms."
+      }
+    }
+  },
+  {
+    "id": "spec_01_unverifiable_complex_clause",
+    "category": "relational_directional",
+    "domain": "systems_architecture",
+    "invariant_description": "Complex cross-clause dependency returning UNCERTAIN for non-local offline verification.",
+    "format_type": "freeform",
+    "source_text": "Sensor Alpha dispatched telemetry to Gateway Node 7, but due to upstream satellite failover, backup encryption keys were routed to Storage Cluster Beta.",
+    "required_values": [
+      {
+        "value": "Sensor Alpha",
+        "type": "entity",
+        "severity": "critical"
+      },
+      {
+        "value": "Gateway Node 7",
+        "type": "entity",
+        "severity": "critical"
+      },
+      {
+        "value": "Storage Cluster Beta",
+        "type": "entity",
+        "severity": "critical"
+      }
+    ],
+    "required_relations": [
+      {
+        "subject": "Sensor Alpha",
+        "predicate": "dispatches_to",
+        "target": "Gateway Node 7",
+        "severity": "critical",
+        "verifiable_offline": true
+      },
+      {
+        "subject": "backup encryption keys",
+        "predicate": "routed_to",
+        "target": "Storage Cluster Beta",
+        "severity": "critical",
+        "verifiable_offline": false
+      }
+    ],
+    "negations": [],
+    "directional_claims": [],
+    "modality": [],
+    "expected_structure": {},
+    "fixtures": {
+      "unchanged": "Sensor Alpha dispatched telemetry to Gateway Node 7, but due to upstream satellite failover, backup encryption keys were routed to Storage Cluster Beta.",
+      "unverifiable_syntax": "Telemetry was forwarded from Sensor Alpha to Gateway Node 7, while satellite failover circumstances prompted alternate key handling across Storage Cluster Beta."
+    }
+  },
+  {
+    "id": "fin_02_directional_revenue_growth",
+    "category": "relational_directional",
+    "domain": "financial_earnings",
+    "invariant_description": "Directional growth verification (revenue grew by 15%, expenses increased by 4%) with opposite-word negative control.",
+    "format_type": "freeform",
+    "source_text": "In Q3 2025, CloudOps revenue grew by 15% to $5.1M, whereas operating expenses increased by 4%.",
+    "required_values": [
+      {
+        "value": "$5.1M",
+        "type": "currency",
+        "severity": "critical"
+      },
+      {
+        "value": "15%",
+        "type": "percentage",
+        "severity": "critical"
+      },
+      {
+        "value": "4%",
+        "type": "percentage",
+        "severity": "critical"
+      },
+      {
+        "value": "Q3 2025",
+        "type": "date_period",
+        "severity": "critical"
+      }
+    ],
+    "required_relations": [
+      {
+        "subject": "$5.1M",
+        "predicate": "revenue_in_period",
+        "target": "Q3 2025",
+        "severity": "critical",
+        "verifiable_offline": true
+      }
+    ],
+    "directional_claims": [
+      {
+        "id": "dir_rev",
+        "subject": "revenue",
+        "target_metric": "15%",
+        "direction": "increase",
+        "severity": "critical"
+      },
+      {
+        "id": "dir_exp",
+        "subject": "operating expenses",
+        "target_metric": "4%",
+        "direction": "increase",
+        "severity": "critical"
+      }
+    ],
+    "negations": [],
+    "modality": [],
+    "expected_structure": {},
+    "fixtures": {
+      "unchanged": "In Q3 2025, CloudOps revenue grew by 15% to $5.1M, whereas operating expenses increased by 4%.",
+      "valid_paraphrase": "During Q3 2025, revenue expanded 15% up to $5.1M, while operating expenses climbed 4%.",
+      "mutations": {
+        "grew_to_dropped": "In Q3 2025, CloudOps revenue dropped by 15% to $5.1M, whereas operating expenses increased by 4%.",
+        "increased_to_decreased": "In Q3 2025, CloudOps revenue grew by 15% to $5.1M, whereas operating expenses decreased by 4%"
+      },
+      "unverifiable_syntax": "In Q3 2025, CloudOps recorded $5.1M in revenue alongside a 15% metric, with operating expenses at 4%.",
+      "adversarial_passes": {
+        "unrelated_opposite_clause": "In Q3 2025, CloudOps revenue grew by 15% to $5.1M, whereas operating expenses increased by 4%, although marketing spend dropped by 5%."
+      }
+    }
+  },
+  {
+    "id": "rel_01_cause_and_effect_reversal",
+    "category": "relational_directional",
+    "domain": "systems_reliability",
+    "invariant_description": "Directional causality: manifold rupture was the primary cause, whereas turbine overheating was the secondary effect.",
+    "format_type": "freeform",
+    "source_text": "Under incident findings, cooling manifold rupture was identified as the primary cause, whereas turbine overheating was the secondary effect.",
+    "required_values": [
+      {
+        "value": "cooling manifold",
+        "type": "entity",
+        "severity": "critical"
+      },
+      {
+        "value": "primary cause",
+        "type": "entity",
+        "severity": "critical"
+      },
+      {
+        "value": "turbine overheating",
+        "type": "entity",
+        "severity": "critical"
+      },
+      {
+        "value": "secondary effect",
+        "type": "entity",
+        "severity": "critical"
+      }
+    ],
+    "required_relations": [
+      {
+        "subject": "cooling manifold",
+        "predicate": "classified_as",
+        "target": "primary cause",
+        "severity": "critical",
+        "verifiable_offline": true
+      },
+      {
+        "subject": "turbine overheating",
+        "predicate": "classified_as",
+        "target": "secondary effect",
+        "severity": "critical",
+        "verifiable_offline": true
+      }
+    ],
+    "negations": [],
+    "directional_claims": [],
+    "modality": [],
+    "expected_structure": {},
+    "fixtures": {
+      "unchanged": "Under incident findings, cooling manifold rupture was identified as the primary cause, whereas turbine overheating was the secondary effect.",
+      "valid_paraphrase": "Incident investigators classified the cooling manifold rupture as the primary cause, while turbine overheating served as the secondary effect.",
+      "mutations": {
+        "inverted_causal_direction": "Under incident findings, turbine overheating was identified as the primary cause, whereas cooling manifold rupture was the secondary effect."
+      }
+    }
+  },
+  {
+    "id": "rel_02_directional_metric_drop_vs_rise",
+    "category": "relational_directional",
+    "domain": "subscription_metrics",
+    "invariant_description": "Directional reduction verification: subscriber churn dropped from 4.8% to 2.1%.",
+    "format_type": "freeform",
+    "source_text": "Following the UX overhaul, quarterly subscriber churn dropped from 4.8% to 2.1%.",
+    "required_values": [
+      {
+        "value": "4.8%",
+        "type": "percentage",
+        "severity": "critical"
+      },
+      {
+        "value": "2.1%",
+        "type": "percentage",
+        "severity": "critical"
+      }
+    ],
+    "required_relations": [],
+    "directional_claims": [
+      {
+        "id": "dir_churn",
+        "subject": "churn",
+        "target_metric": "2.1%",
+        "direction": "decrease",
+        "severity": "critical"
+      }
+    ],
+    "negations": [],
+    "modality": [],
+    "expected_structure": {},
+    "fixtures": {
+      "unchanged": "Following the UX overhaul, quarterly subscriber churn dropped from 4.8% to 2.1%.",
+      "valid_paraphrase": "Subsequent to redesigning the interface, quarterly subscriber churn decreased from 4.8% to 2.1%.",
+      "mutations": {
+        "direction_reversed_to_rose": "Following the UX overhaul, quarterly subscriber churn rose from 4.8% to 2.1%."
+      }
+    }
+  },
+  {
+    "id": "rel_03_conflicting_clauses_repeated_subject",
+    "category": "relational_directional",
+    "domain": "retail_operations",
+    "invariant_description": "Catching contradictory intra-sentence directional claims for repeated subject.",
+    "format_type": "freeform",
+    "source_text": "North America retail sales climbed by 12%, whereas European retail sales expanded by 8%.",
+    "required_values": [
+      {
+        "value": "12%",
+        "type": "percentage",
+        "severity": "critical"
+      },
+      {
+        "value": "8%",
+        "type": "percentage",
+        "severity": "critical"
+      },
+      {
+        "value": "North America",
+        "type": "entity",
+        "severity": "critical"
+      }
+    ],
+    "required_relations": [],
+    "directional_claims": [
+      {
+        "id": "dir_na",
+        "subject": "North America",
+        "target_metric": "12%",
+        "direction": "increase",
+        "severity": "critical"
+      }
+    ],
+    "negations": [],
+    "modality": [],
+    "expected_structure": {},
+    "fixtures": {
+      "unchanged": "North America retail sales climbed by 12%, whereas European retail sales expanded by 8%.",
+      "valid_paraphrase": "Retail revenues in North America grew by 12%, while European retail operations expanded by 8%.",
+      "mutations": {
+        "conflicting_contradictory_clause": "North America retail sales climbed by 12%, but North America retail sales dropped by 12% in final audits."
+      }
+    }
+  },
+  {
+    "id": "rel_04_parent_subsidiary_acquisition_swap",
+    "category": "relational_directional",
+    "domain": "mergers_acquisitions",
+    "invariant_description": "Acquisition role assignment: Alphabet acted as the acquirer entity, whereas Mandiant was the acquired target.",
+    "format_type": "freeform",
+    "source_text": "Under the merger agreement, Alphabet acted as the acquirer entity, whereas Mandiant was the acquired target for $5.4B.",
+    "required_values": [
+      {
+        "value": "Mandiant",
+        "type": "entity",
+        "severity": "critical"
+      },
+      {
+        "value": "Alphabet",
+        "type": "entity",
+        "severity": "critical"
+      },
+      {
+        "value": "$5.4B",
+        "type": "currency",
+        "severity": "critical"
+      },
+      {
+        "value": "acquirer entity",
+        "type": "entity",
+        "severity": "critical"
+      },
+      {
+        "value": "acquired target",
+        "type": "entity",
+        "severity": "critical"
+      }
+    ],
+    "required_relations": [
+      {
+        "subject": "Alphabet",
+        "predicate": "acted_as",
+        "target": "acquirer entity",
+        "severity": "critical",
+        "verifiable_offline": true
+      },
+      {
+        "subject": "Mandiant",
+        "predicate": "acted_as",
+        "target": "acquired target",
+        "severity": "critical",
+        "verifiable_offline": true
+      }
+    ],
+    "negations": [],
+    "directional_claims": [],
+    "modality": [],
+    "expected_structure": {},
+    "fixtures": {
+      "unchanged": "Under the merger agreement, Alphabet acted as the acquirer entity, whereas Mandiant was the acquired target for $5.4B.",
+      "valid_paraphrase": "Under the terms of the merger, Alphabet served as the acquirer entity, while Mandiant was the acquired target in the $5.4B transaction.",
+      "mutations": {
+        "swapped_acquirer_and_target": "Under the merger agreement, Mandiant acted as the acquirer entity, whereas Alphabet was the acquired target for $5.4B."
+      }
+    }
+  },
+  {
+    "id": "rel_05_unverifiable_distant_attribution",
+    "category": "relational_directional",
+    "domain": "international_business",
+    "invariant_description": "Distant cross-clause attribution that cannot be safely established offline -> UNCERTAIN.",
+    "format_type": "freeform",
+    "source_text": "While macroeconomic headwinds dampened European output, Apex Corp attributed steady performance in Asian markets to localized inventory buffers.",
+    "required_values": [
+      {
+        "value": "Apex Corp",
+        "type": "entity",
+        "severity": "critical"
+      },
+      {
+        "value": "Asian markets",
+        "type": "entity",
+        "severity": "critical"
+      }
+    ],
+    "required_relations": [
+      {
+        "subject": "Apex Corp",
+        "predicate": "attributes_gain_to",
+        "target": "localized inventory buffers",
+        "severity": "critical",
+        "verifiable_offline": false
+      }
+    ],
+    "negations": [],
+    "directional_claims": [],
+    "modality": [],
+    "expected_structure": {},
+    "fixtures": {
+      "unchanged": "While macroeconomic headwinds dampened European output, Apex Corp attributed steady performance in Asian markets to localized inventory buffers.",
+      "unverifiable_syntax": "European results softened amidst macro pressures, but localized inventory buffers supported Apex Corp across Asian markets."
+    }
+  },
+  {
+    "id": "email_01_executive_escalation",
+    "category": "document_structure_intent",
+    "domain": "customer_operations",
+    "invariant_description": "Email structural integrity: salutation, sign-off, paragraph breaks, and maintenance window.",
+    "format_type": "email",
+    "source_text": "Dear Team,\n\nPlease be advised that the migration cutoff is scheduled for October 15 at 18:00 UTC. Systems will experience an estimated 3-minute maintenance window.\n\nBest regards,\nOperations Lead",
+    "required_values": [
+      {
+        "value": "October 15",
+        "type": "date_period",
+        "severity": "critical"
+      },
+      {
+        "value": "18:00 UTC",
+        "type": "time",
+        "severity": "critical"
+      },
+      {
+        "value": "3-minute",
+        "type": "quantity",
+        "severity": "critical"
+      }
+    ],
+    "required_relations": [
+      {
+        "subject": "18:00 UTC",
+        "predicate": "cutoff_time_on_date",
+        "target": "October 15",
+        "severity": "critical",
+        "verifiable_offline": true
+      }
+    ],
+    "negations": [],
+    "directional_claims": [],
+    "modality": [],
+    "expected_structure": {
+      "requires_greeting": true,
+      "requires_signoff": true,
+      "min_paragraphs": 2
+    },
+    "fixtures": {
+      "unchanged": "Dear Team,\n\nPlease be advised that the migration cutoff is scheduled for October 15 at 18:00 UTC. Systems will experience an estimated 3-minute maintenance window.\n\nBest regards,\nOperations Lead",
+      "valid_paraphrase": "Dear Team,\n\nKindly note the platform migration cutover takes place October 15 at 18:00 UTC, during which systems anticipate a 3-minute maintenance window.\n\nBest regards,\nOperations Lead",
+      "mutations": {
+        "collapsed_formatting": "Dear Team, Please be advised that the migration cutoff is scheduled for October 15 at 18:00 UTC. Systems will experience an estimated 3-minute maintenance window. Best regards, Operations Lead",
+        "stripped_salutation_and_signoff": "The migration cutoff is scheduled for October 15 at 18:00 UTC. Systems will experience an estimated 3-minute maintenance window."
+      }
+    }
+  },
+  {
+    "id": "struct_01_collapsed_markdown_bullets",
+    "category": "document_structure_intent",
+    "domain": "cloud_operations",
+    "invariant_description": "Preservation of markdown bullet list items (minimum 3 list items).",
+    "format_type": "markdown",
+    "source_text": "Key deployment prerequisites:\n- Provision IAM role with S3 write access\n- Generate 2048-bit RSA keypair\n- Whitelist gateway IP address 192.168.1.10",
+    "required_values": [
+      {
+        "value": "2048-bit",
+        "type": "quantity",
+        "severity": "critical"
+      },
+      {
+        "value": "192.168.1.10",
+        "type": "entity",
+        "severity": "critical"
+      }
+    ],
+    "required_relations": [],
+    "negations": [],
+    "directional_claims": [],
+    "modality": [],
+    "expected_structure": {
+      "min_bullets": 3,
+      "bullets_severity": "critical"
+    },
+    "fixtures": {
+      "unchanged": "Key deployment prerequisites:\n- Provision IAM role with S3 write access\n- Generate 2048-bit RSA keypair\n- Whitelist gateway IP address 192.168.1.10",
+      "valid_paraphrase": "Deployment setup requirements:\n- Create IAM credentials providing write permissions to S3\n- Issue a 2048-bit RSA cryptographic key\n- Add IP address 192.168.1.10 to the firewall whitelist",
+      "mutations": {
+        "collapsed_bullets_into_prose": "Key deployment prerequisites: Provision IAM role with S3 write access, generate 2048-bit RSA keypair, and whitelist gateway IP address 192.168.1.10."
+      }
+    }
+  },
+  {
+    "id": "struct_02_missing_section_heading",
+    "category": "document_structure_intent",
+    "domain": "incident_reporting",
+    "invariant_description": "Preservation of document section header ('# Incident Root Cause Analysis').",
+    "format_type": "markdown",
+    "source_text": "# Incident Root Cause Analysis\n\nThe primary database failed due to disk exhaustion on volume /var/data at 04:15 UTC.",
+    "required_values": [
+      {
+        "value": "/var/data",
+        "type": "entity",
+        "severity": "critical"
+      },
+      {
+        "value": "04:15 UTC",
+        "type": "time",
+        "severity": "critical"
+      }
+    ],
+    "required_relations": [
+      {
+        "subject": "04:15 UTC",
+        "predicate": "incident_time",
+        "target": "/var/data",
+        "severity": "critical",
+        "verifiable_offline": true
+      }
+    ],
+    "negations": [],
+    "directional_claims": [],
+    "modality": [],
+    "expected_structure": {
+      "requires_heading": true,
+      "required_heading_text": "Incident Root Cause Analysis",
+      "acceptable_headings": [
+        "Incident Root Cause Analysis"
+      ],
+      "heading_severity": "critical"
+    },
+    "fixtures": {
+      "unchanged": "# Incident Root Cause Analysis\n\nThe primary database failed due to disk exhaustion on volume /var/data at 04:15 UTC.",
+      "valid_paraphrase": "# Incident Root Cause Analysis\n\nDisk space saturation across volume /var/data triggered primary database failure at 04:15 UTC.",
+      "mutations": {
+        "heading_stripped_entirely": "The primary database failed due to disk exhaustion on volume /var/data at 04:15 UTC."
+      }
+    }
+  },
+  {
+    "id": "struct_03_request_vs_assertion_intent",
+    "category": "document_structure_intent",
+    "domain": "customer_support",
+    "invariant_description": "Preservation of polite request intent ('may provide' / 'kindly request') preventing coercive demand shift.",
+    "format_type": "freeform",
+    "source_text": "We kindly request that you provide updated utility statements at your earliest convenience.",
+    "required_values": [
+      {
+        "value": "utility statements",
+        "type": "entity",
+        "severity": "critical"
+      }
+    ],
+    "required_relations": [],
+    "directional_claims": [],
+    "negations": [],
+    "modality": [
+      {
+        "id": "mod_request_intent",
+        "scope_term": "provide",
+        "target_entity": "utility statements",
+        "required_modality": "possibility",
+        "severity": "critical",
+        "accepted_markers": [
+          "request",
+          "kindly",
+          "please",
+          "may",
+          "could",
+          "would appreciate"
+        ],
+        "reversed_markers": [
+          "must",
+          "immediately demand",
+          "shall",
+          "surrender"
+        ]
+      }
+    ],
+    "expected_structure": {},
+    "fixtures": {
+      "unchanged": "We kindly request that you provide updated utility statements at your earliest convenience.",
+      "valid_paraphrase": "Please provide your current utility statements whenever you have an opportunity.",
+      "mutations": {
+        "request_coerced_into_demand": "You must immediately provide your utility statements without delay."
+      }
+    }
+  },
+  {
+    "id": "struct_04_material_omission_warning_notice",
+    "category": "document_structure_intent",
+    "domain": "occupational_safety",
+    "invariant_description": "Mandatory retention of safety warning label ('WARNING: electrical arcing').",
+    "format_type": "freeform",
+    "source_text": "WARNING: Disconnecting battery terminals during active charging risks electrical arcing and severe chemical exposure.",
+    "required_values": [
+      {
+        "value": "WARNING",
+        "type": "entity",
+        "severity": "critical"
+      },
+      {
+        "value": "electrical arcing",
+        "type": "entity",
+        "severity": "critical"
+      }
+    ],
+    "required_relations": [],
+    "negations": [],
+    "directional_claims": [],
+    "modality": [],
+    "expected_structure": {},
+    "fixtures": {
+      "unchanged": "WARNING: Disconnecting battery terminals during active charging risks electrical arcing and severe chemical exposure.",
+      "valid_paraphrase": "WARNING: Uncoupling battery terminals while actively charging presents severe electrical arcing risks and hazardous chemical exposure.",
+      "mutations": {
+        "omitted_critical_warning_preamble": "Disconnecting battery terminals during active charging risks electrical arcing and severe chemical exposure."
+      }
+    }
+  },
+  {
+    "id": "struct_05_multi_step_procedure_order",
+    "category": "document_structure_intent",
+    "domain": "systems_administration",
+    "invariant_description": "Preservation of numbered multi-step procedural list (minimum 3 numbered steps).",
+    "format_type": "markdown",
+    "source_text": "Server decommissioning sequence:\n1. Drain active websocket connections\n2. Terminate background celery workers\n3. Unmount persistent EBS volume",
+    "required_values": [
+      {
+        "value": "websocket",
+        "type": "entity",
+        "severity": "critical"
+      },
+      {
+        "value": "celery",
+        "type": "entity",
+        "severity": "critical"
+      },
+      {
+        "value": "EBS volume",
+        "type": "entity",
+        "severity": "critical"
+      }
+    ],
+    "required_relations": [],
+    "negations": [],
+    "directional_claims": [],
+    "modality": [],
+    "expected_structure": {
+      "min_bullets": 3,
+      "bullets_severity": "critical"
+    },
+    "fixtures": {
+      "unchanged": "Server decommissioning sequence:\n1. Drain active websocket connections\n2. Terminate background celery workers\n3. Unmount persistent EBS volume",
+      "valid_paraphrase": "Host retirement workflow:\n1. Evacuate live websocket connections\n2. Shut down background celery workers\n3. Detach the persistent EBS volume",
+      "mutations": {
+        "numbered_steps_flattened_to_prose": "Server decommissioning sequence: Drain active websocket connections, terminate background celery workers, and unmount persistent EBS volume."
+      }
+    }
+  },
+  {
+    "id": "struct_06_contractual_recitals_preamble",
+    "category": "document_structure_intent",
+    "domain": "legal_contracts",
+    "invariant_description": "Preservation of multi-paragraph contractual recitals (minimum 3 distinct paragraphs).",
+    "format_type": "freeform",
+    "source_text": "WHEREAS, Licensor develops proprietary analytics software;\n\nWHEREAS, Licensee desires to integrate said software into its enterprise platform;\n\nNOW, THEREFORE, the parties agree as follows:",
+    "required_values": [
+      {
+        "value": "Licensor",
+        "type": "entity",
+        "severity": "critical"
+      },
+      {
+        "value": "Licensee",
+        "type": "entity",
+        "severity": "critical"
+      }
+    ],
+    "required_relations": [],
+    "negations": [],
+    "directional_claims": [],
+    "modality": [],
+    "expected_structure": {
+      "min_paragraphs": 3
+    },
+    "fixtures": {
+      "unchanged": "WHEREAS, Licensor develops proprietary analytics software;\n\nWHEREAS, Licensee desires to integrate said software into its enterprise platform;\n\nNOW, THEREFORE, the parties agree as follows:",
+      "valid_paraphrase": "WHEREAS, Licensor creates proprietary analytics solutions;\n\nWHEREAS, Licensee wishes to incorporate such technologies into its corporate stack;\n\nNOW, THEREFORE, the parties mutually agree as follows:",
+      "mutations": {
+        "recitals_flattened_single_block": "WHEREAS, Licensor develops proprietary analytics software; WHEREAS, Licensee desires to integrate said software into its enterprise platform; NOW, THEREFORE, the parties agree as follows:"
+      }
+    }
+  },
+  {
+    "id": "struct_07_executive_memo_formatting",
+    "category": "document_structure_intent",
+    "domain": "executive_communications",
+    "invariant_description": "Executive memorandum header structure and percentage metric (14%).",
+    "format_type": "memo",
+    "source_text": "MEMORANDUM:\n\nTO: Executive Committee\nFROM: Chief Risk Officer\nSUBJECT: Cyber Insurance Renewal\n\nPremiums increased by 14% across tier-1 carriers.",
+    "required_values": [
+      {
+        "value": "14%",
+        "type": "percentage",
+        "severity": "critical"
+      },
+      {
+        "value": "Executive Committee",
+        "type": "entity",
+        "severity": "critical"
+      }
+    ],
+    "required_relations": [],
+    "directional_claims": [
+      {
+        "id": "dir_premiums",
+        "subject": "Premiums",
+        "target_metric": "14%",
+        "direction": "increase",
+        "severity": "critical"
+      }
+    ],
+    "negations": [],
+    "modality": [],
+    "expected_structure": {
+      "requires_heading": true,
+      "min_paragraphs": 2,
+      "heading_severity": "critical"
+    },
+    "fixtures": {
+      "unchanged": "MEMORANDUM:\n\nTO: Executive Committee\nFROM: Chief Risk Officer\nSUBJECT: Cyber Insurance Renewal\n\nPremiums increased by 14% across tier-1 carriers.",
+      "valid_paraphrase": "MEMORANDUM:\n\nTO: Executive Committee\nFROM: Chief Risk Officer\nSUBJECT: Cyber Insurance Renewal\n\nUnderwriting premiums rose 14% among primary insurance carriers.",
+      "mutations": {
+        "memo_heading_omitted": "Premiums increased by 14% across tier-1 carriers as communicated to the Executive Committee."
+      }
+    }
+  },
+  {
+    "id": "struct_08_polite_request_to_coercive_demand",
+    "category": "document_structure_intent",
+    "domain": "billing_operations",
+    "invariant_description": "Discretionary clarification inquiry regarding invoice payment of $12,500 under Invoice 409.",
+    "format_type": "freeform",
+    "source_text": "Could you please clarify whether the payment of $12,500 was processed under Invoice 409?",
+    "required_values": [
+      {
+        "value": "$12,500",
+        "type": "currency",
+        "severity": "critical"
+      },
+      {
+        "value": "Invoice 409",
+        "type": "entity",
+        "severity": "critical"
+      }
+    ],
+    "required_relations": [
+      {
+        "subject": "$12,500",
+        "predicate": "payment_for",
+        "target": "Invoice 409",
+        "severity": "critical",
+        "verifiable_offline": true
+      }
+    ],
+    "negations": [],
+    "directional_claims": [],
+    "modality": [
+      {
+        "id": "mod_clarify_inquiry",
+        "scope_term": "clarify",
+        "target_entity": "Invoice 409",
+        "required_modality": "possibility",
+        "severity": "critical",
+        "accepted_markers": [
+          "could",
+          "please",
+          "can",
+          "would",
+          "may"
+        ],
+        "reversed_markers": [
+          "must",
+          "confirm that",
+          "the audit confirms",
+          "shall"
+        ]
+      }
+    ],
+    "expected_structure": {},
+    "fixtures": {
+      "unchanged": "Could you please clarify whether the payment of $12,500 was processed under Invoice 409?",
+      "valid_paraphrase": "Would you please clarify whether payment of $12,500 was allocated to Invoice 409?",
+      "mutations": {
+        "coercive_demand": "You must clarify whether the payment of $12,500 was processed under Invoice 409."
+      }
+    }
+  },
+  {
+    "id": "struct_09_conditional_advice_to_unconditional_mandate",
+    "category": "document_structure_intent",
+    "domain": "medical_guidelines",
+    "invariant_description": "Conditional discretionary pause ('may pause' if dizzy) vs unconditional mandatory cessation.",
+    "format_type": "freeform",
+    "source_text": "If experiencing dizziness, participants may pause endurance exercises until symptoms resolve.",
+    "required_values": [
+      {
+        "value": "dizziness",
+        "type": "entity",
+        "severity": "critical"
+      },
+      {
+        "value": "endurance exercises",
+        "type": "entity",
+        "severity": "critical"
+      }
+    ],
+    "required_relations": [],
+    "negations": [],
+    "directional_claims": [],
+    "modality": [
+      {
+        "id": "mod_pause_discretionary",
+        "scope_term": "pause",
+        "target_entity": "participants",
+        "required_modality": "possibility",
+        "severity": "critical"
+      }
+    ],
+    "expected_structure": {},
+    "fixtures": {
+      "unchanged": "If experiencing dizziness, participants may pause endurance exercises until symptoms resolve.",
+      "valid_paraphrase": "Should they experience dizziness, participants are permitted to pause endurance exercises until symptoms resolve.",
+      "mutations": {
+        "conditional_pause_forced_to_must": "If experiencing dizziness, participants must pause endurance exercises until symptoms resolve."
+      }
+    }
+  }
+]
